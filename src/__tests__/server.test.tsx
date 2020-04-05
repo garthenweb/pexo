@@ -54,4 +54,65 @@ describe("The server", () => {
         expect(res.text).toContain("Hello World");
       });
   });
+
+  it("should allow data fetching in chunks", async () => {
+    const { app, logger } = createMiddlewareWithComponent(() => (
+      <>
+        <TestingViewChunk
+          loader={() => ({
+            View: ({ foo }: { foo: number }) => `Hello ${foo}`,
+            generateViewState: () =>
+              Promise.resolve({
+                foo: 42,
+              }),
+          })}
+        />
+        <TestingViewChunk loader={() => ({ View: () => " World" })} />
+      </>
+    ));
+
+    await request(app)
+      .get("/")
+      .expect("Content-Type", "text/html")
+      .expect(200)
+      .expect((res) => {
+        expect(logger.error).not.toHaveBeenCalled();
+        expect(res.text).toContain("Hello 42 World");
+      });
+  });
+
+  it("should allow data fetching with props in chunks", async () => {
+    const { app, logger } = createMiddlewareWithComponent(() => (
+      <>
+        <TestingViewChunk
+          loader={() => ({
+            View: ({ foo }: { foo: number }) => `Hello ${foo}`,
+            generateViewState: () =>
+              Promise.resolve({
+                foo: 42,
+              }),
+          })}
+        />
+        <TestingViewChunk
+          foo={2}
+          loader={() => ({
+            View: ({ bar }: { bar: number }) => ` World ${bar}`,
+            generateViewState: ({ foo }: { foo: number }) =>
+              Promise.resolve({
+                bar: 42 * foo,
+              }),
+          })}
+        />
+      </>
+    ));
+
+    await request(app)
+      .get("/")
+      .expect("Content-Type", "text/html")
+      .expect(200)
+      .expect((res) => {
+        expect(logger.error).not.toHaveBeenCalled();
+        expect(res.text).toContain("Hello 42 World 84");
+      });
+  });
 });

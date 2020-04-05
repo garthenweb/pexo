@@ -17,7 +17,7 @@ const ServerBaseChunk: BaseChunkType = ({ name, loader, ...delegateProps }) => {
   }
   const { registry } = useContext(ServerChunkRegisterContext);
   registry.set(chunkCacheKey, {
-    View: chunkModule.View,
+    ...chunkModule,
     chunkCacheKey,
     chunkName: name,
     props: delegateProps,

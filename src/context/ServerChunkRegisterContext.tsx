@@ -1,17 +1,19 @@
-import React, { FC, ComponentType } from "react";
+import React, { FC } from "react";
+import { ChunkModule } from "../components/types";
 
 export const ServerChunkRegisterContext = React.createContext({
   registry: new Map(),
 });
 
+export interface RegistryItem<InputProps, ViewState>
+  extends ChunkModule<InputProps, ViewState> {
+  chunkCacheKey: string;
+  chunkName: string;
+  props: InputProps;
+}
+
 interface Props {
-  registry: Map<
-    string,
-    {
-      View?: ComponentType;
-      name: string;
-    }
-  >;
+  registry: Map<string, RegistryItem<any, any>>;
   children: JSX.Element;
 }
 

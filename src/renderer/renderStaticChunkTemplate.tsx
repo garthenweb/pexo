@@ -1,15 +1,16 @@
-import React, { ReactNode, ComponentType } from "react";
+import React, { ReactNode } from "react";
 import ReactDOMServer from "react-dom/server";
-import { ServerChunkRegisterProvider } from "../context/ServerChunkRegisterContext";
+import {
+  ServerChunkRegisterProvider,
+  RegistryItem,
+} from "../context/ServerChunkRegisterContext";
 
 interface Config {
   createApp: () => JSX.Element;
   createAppContext: (node: ReactNode) => JSX.Element;
 }
 
-export interface ChunkTemplate {
-  View?: ComponentType;
-  name?: string;
+export interface ChunkTemplate extends Partial<RegistryItem<any, any>> {
   nextTemplateChunk: string;
 }
 
@@ -17,17 +18,16 @@ export const renderStaticChunkTemplate = ({
   createAppContext,
   createApp,
 }: Config): ChunkTemplate[] => {
-  const registry = new Map();
+  const registry = new Map<string, RegistryItem<any, any>>();
   const template = ReactDOMServer.renderToString(
     <ServerChunkRegisterProvider registry={registry}>
       {createAppContext(createApp())}
     </ServerChunkRegisterProvider>
   );
   return getOrderedChunkIdsFromTemplate(template).map((chunk) => {
-    const chunkData = registry.get(chunk.id);
+    const chunkData = registry.get(chunk.id!);
     return {
-      View: chunkData?.View,
-      name: chunkData?.name,
+      ...chunkData,
       nextTemplateChunk: chunk.nextTemplateChunk,
     };
   });

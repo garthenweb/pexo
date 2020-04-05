@@ -19,11 +19,12 @@ export const renderToChunkStream = ({
   stream.pipe(writable);
   stream.unpipe(writable);
 
-  orderedChunks
+  fetchDataForChunks(orderedChunks)
     .reduce(
       (queue, chunk) =>
         queue.then(async () => {
-          const chunkNode = chunk.View ? <chunk.View /> : null;
+          const viewProps = await chunk.viewState;
+          const chunkNode = chunk.View ? <chunk.View {...viewProps} /> : null;
           const chunkStream = ReactDOMServer.renderToNodeStream(
             createAppContext(chunkNode)
           );
@@ -40,4 +41,13 @@ export const renderToChunkStream = ({
     .then(() => stream.end());
 
   return stream;
+};
+
+const fetchDataForChunks = (chunks: ChunkTemplate[]) => {
+  return chunks.map((chunk) => ({
+    ...chunk,
+    viewState: chunk.generateViewState
+      ? chunk.generateViewState(chunk.props)
+      : {},
+  }));
 };
