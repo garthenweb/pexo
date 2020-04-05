@@ -5,10 +5,18 @@ import { BaseChunkType } from "./types";
 const BaseChunk: BaseChunkType = ({
   name = throwNameNotDefined(),
   loader,
+  redirect,
   ...delegateProps
 }) => {
   if (!process.browser) {
-    return <ServerBaseChunk name={name} loader={loader} {...delegateProps} />;
+    return (
+      <ServerBaseChunk
+        name={name}
+        loader={loader}
+        redirect={redirect}
+        {...delegateProps}
+      />
+    );
   }
   return null;
 };

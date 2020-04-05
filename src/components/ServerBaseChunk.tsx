@@ -7,7 +7,12 @@ const isSyncModule = <T extends {}>(val: T | Promise<T>): val is T => {
   return typeof (val as any).then !== "function";
 };
 
-const ServerBaseChunk: BaseChunkType = ({ name, loader, ...delegateProps }) => {
+const ServerBaseChunk: BaseChunkType = ({
+  name,
+  loader,
+  redirect,
+  ...delegateProps
+}) => {
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
   const chunkModule = loader();
   if (!isSyncModule(chunkModule)) {
@@ -20,6 +25,7 @@ const ServerBaseChunk: BaseChunkType = ({ name, loader, ...delegateProps }) => {
     ...chunkModule,
     chunkCacheKey,
     chunkName: name,
+    isRedirect: Boolean(redirect),
     props: delegateProps,
   });
   return (

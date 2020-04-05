@@ -3,6 +3,7 @@ import ReactDOMServer from "react-dom/server";
 import { ReactNode } from "react";
 import { Writable, PassThrough } from "stream";
 import { ChunkTemplate } from "./renderStaticChunkTemplate";
+import { requestDataForChunks } from "../loader/requestDataForChunks";
 
 interface Config {
   orderedChunks: ChunkTemplate[];
@@ -19,14 +20,13 @@ export const renderToChunkStream = ({
   stream.pipe(writable);
   stream.unpipe(writable);
 
-  fetchDataForChunks(orderedChunks)
+  requestDataForChunks(orderedChunks)
     .reduce(
       (queue, chunk) =>
         queue.then(async () => {
-          const viewProps = await chunk.viewState;
-          const chunkNode = chunk.View ? <chunk.View {...viewProps} /> : null;
+          const chunkNodes = await generateChunkNodes(chunk);
           const chunkStream = ReactDOMServer.renderToNodeStream(
-            createAppContext(chunkNode)
+            createAppContext(chunkNodes)
           );
           chunkStream.pipe(stream, { end: false });
           await new Promise((resolve) =>
@@ -43,11 +43,22 @@ export const renderToChunkStream = ({
   return stream;
 };
 
-const fetchDataForChunks = (chunks: ChunkTemplate[]) => {
-  return chunks.map((chunk) => ({
-    ...chunk,
-    viewState: chunk.generateViewState
-      ? chunk.generateViewState(chunk.props)
-      : {},
-  }));
+const generateChunkNodes = async (chunk: ChunkTemplate) => {
+  const resolvedViewState = await chunk.viewState;
+  const chunkNode = chunk.View ? (
+    <chunk.View key={1} {...resolvedViewState} />
+  ) : null;
+  const scriptNode = chunk.chunkCacheKey ? (
+    <script
+      key={2}
+      defer
+      data-px-chunk-view-state={chunk.chunkCacheKey}
+      dangerouslySetInnerHTML={{
+        __html: `window.pxProvider.viewStateCache['${
+          chunk.chunkCacheKey
+        }'] = ${JSON.stringify(resolvedViewState)}`,
+      }}
+    />
+  ) : null;
+  return [chunkNode, scriptNode];
 };

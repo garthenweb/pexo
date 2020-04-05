@@ -41,7 +41,7 @@ describe("The server", () => {
     const { app, logger } = createMiddlewareWithComponent(() => (
       <>
         <TestingViewChunk loader={() => ({ View: () => "Hello" })} />
-        <TestingViewChunk loader={() => ({ View: () => " World" })} />
+        <TestingViewChunk loader={() => ({ View: () => "World" })} />
       </>
     ));
 
@@ -51,7 +51,8 @@ describe("The server", () => {
       .expect(200)
       .expect((res) => {
         expect(logger.error).not.toHaveBeenCalled();
-        expect(res.text).toContain("Hello World");
+        expect(res.text).toContain("Hello");
+        expect(res.text).toContain("World");
       });
   });
 
@@ -60,14 +61,13 @@ describe("The server", () => {
       <>
         <TestingViewChunk
           loader={() => ({
-            View: ({ foo }: { foo: number }) => `Hello ${foo}`,
+            View: ({ foo }: { foo: number }) => `Hello ${foo} World`,
             generateViewState: () =>
               Promise.resolve({
                 foo: 42,
               }),
           })}
         />
-        <TestingViewChunk loader={() => ({ View: () => " World" })} />
       </>
     ));
 
@@ -85,21 +85,14 @@ describe("The server", () => {
     const { app, logger } = createMiddlewareWithComponent(() => (
       <>
         <TestingViewChunk
+          multiplicate={2}
           loader={() => ({
-            View: ({ foo }: { foo: number }) => `Hello ${foo}`,
-            generateViewState: () =>
+            View: ({ bar, foo }: { bar: number; foo: number }) =>
+              `Hello ${foo} World ${bar}`,
+            generateViewState: ({ multiplicate }: { multiplicate: number }) =>
               Promise.resolve({
                 foo: 42,
-              }),
-          })}
-        />
-        <TestingViewChunk
-          foo={2}
-          loader={() => ({
-            View: ({ bar }: { bar: number }) => ` World ${bar}`,
-            generateViewState: ({ foo }: { foo: number }) =>
-              Promise.resolve({
-                bar: 42 * foo,
+                bar: 42 * multiplicate,
               }),
           })}
         />
@@ -114,5 +107,82 @@ describe("The server", () => {
         expect(logger.error).not.toHaveBeenCalled();
         expect(res.text).toContain("Hello 42 World 84");
       });
+  });
+
+  it("should expose the view state", async () => {
+    const { app, logger } = createMiddlewareWithComponent(() => (
+      <>
+        <TestingViewChunk
+          multiplicate={2}
+          loader={() => ({
+            View: ({ bar, foo }: { bar: number; foo: number }) =>
+              `Hello ${foo} World ${bar}`,
+            generateViewState: ({ multiplicate }: { multiplicate: number }) =>
+              Promise.resolve({
+                foo: 42,
+                bar: 42 * multiplicate,
+              }),
+          })}
+        />
+      </>
+    ));
+
+    await request(app)
+      .get("/")
+      .expect("Content-Type", "text/html")
+      .expect(200)
+      .expect((res) => {
+        expect(logger.error).not.toHaveBeenCalled();
+        expect(res.text).toContain("data-px-chunk-view-state");
+        expect(res.text).toContain('{"foo":42,"bar":84}');
+      });
+  });
+
+  describe("for a redirect chunk", () => {
+    it("should redirect", async () => {
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            redirect
+            loader={() => ({
+              generateViewState: () =>
+                Promise.resolve({
+                  pathname: "/myRedirectTarget",
+                  status: 301,
+                }),
+            })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .expect(301)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.header.location).toBe("/myRedirectTarget");
+        });
+    });
+
+    it("should ignore redirect if it does not config", async () => {
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            redirect
+            loader={() => ({
+              generateViewState: () => Promise.resolve(),
+            })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain("</html>");
+        });
+    });
   });
 });

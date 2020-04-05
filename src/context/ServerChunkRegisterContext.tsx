@@ -9,6 +9,7 @@ export interface RegistryItem<InputProps, ViewState>
   extends ChunkModule<InputProps, ViewState> {
   chunkCacheKey: string;
   chunkName: string;
+  isRedirect: boolean;
   props: InputProps;
 }
 

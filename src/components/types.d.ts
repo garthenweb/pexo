@@ -14,6 +14,7 @@ export type Loader<InputProps, ViewState> = (
 export type BaseProps<InputProps, ViewState> = {
   name: string;
   loader: Loader<InputProps, ViewState>;
+  redirect?: boolean;
 };
 
 export interface BaseChunkType<

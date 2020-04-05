@@ -3,6 +3,8 @@ import express from "express";
 import { PxGlobalServerProvider } from "./context/GlobalContext";
 import { renderStaticChunkTemplate } from "./renderer/renderStaticChunkTemplate";
 import { renderToChunkStream } from "./renderer/renderToChunkStream";
+import { preloadBlockingChunks } from "./loader/preloadBlockingChunks";
+import { Redirect } from "./utils/Redirect";
 
 export interface Logger {
   info: (message: string) => void;
@@ -31,11 +33,20 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       const createAppContext = (chunkNode: React.ReactNode) => (
         <PxGlobalServerProvider>{chunkNode}</PxGlobalServerProvider>
       );
-      const orderedChunks = renderStaticChunkTemplate({
+      let orderedChunks = renderStaticChunkTemplate({
         createApp,
         createAppContext,
       });
-      // await preloadBlockingChunks(chunks);
+      try {
+        orderedChunks = await preloadBlockingChunks(orderedChunks);
+      } catch (throwable) {
+        if (throwable instanceof Redirect) {
+          res.redirect(throwable.status, throwable.pathname);
+          res.end();
+          return;
+        }
+        logger.error(throwable);
+      }
 
       res.setHeader("Content-Type", "text/html");
       res.write(htmlStart);
