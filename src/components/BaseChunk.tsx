@@ -1,13 +1,14 @@
 import React from "react";
 import ServerBaseChunk from "./ServerBaseChunk";
-import { BaseChunkType } from "./types";
+import ClientBaseChunk from "./ClientBaseChunk";
+import { BaseProps } from "./types";
 
-const BaseChunk: BaseChunkType = ({
+const BaseChunk = <InputProps extends {}, ViewState extends {}>({
   name = throwNameNotDefined(),
   loader,
   redirect,
   ...delegateProps
-}) => {
+}: InputProps & BaseProps<InputProps, ViewState>) => {
   if (!process.browser) {
     return (
       <ServerBaseChunk
@@ -18,7 +19,14 @@ const BaseChunk: BaseChunkType = ({
       />
     );
   }
-  return null;
+  return (
+    <ClientBaseChunk
+      name={name}
+      loader={loader}
+      redirect={redirect}
+      {...delegateProps}
+    />
+  );
 };
 
 const throwNameNotDefined = () => {

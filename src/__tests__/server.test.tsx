@@ -1,5 +1,5 @@
-import React from "react";
-import { createStreamMiddleware, Logger } from "../server";
+import React, { FC } from "react";
+import { createStreamMiddleware } from "../server";
 import request from "supertest";
 import express from "express";
 import { TestingViewChunk } from "../components";

@@ -1,10 +1,7 @@
 import React from "react";
-import BaseChunk, { BaseChunkType, ChunkModule } from "./components/BaseChunk";
+import BaseChunk from "./components/BaseChunk";
+import { BaseProps } from "./components/types";
 
-export const TestingViewChunk: BaseChunkType<
-  {},
-  {},
-  {
-    loader: () => ChunkModule<{}, {}>;
-  }
-> = (props) => <BaseChunk name={performance.now().toString()} {...props} />;
+export const TestingViewChunk = <InputProps extends {}, ViewState extends {}>(
+  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">
+) => <BaseChunk name={performance.now().toString()} {...props} />;

@@ -1,21 +1,18 @@
-import React, { useContext, FC } from "react";
+import React, { useContext } from "react";
 import { generateChunkCacheKey } from "../utils/cacheKey";
 import { ServerChunkRegisterContext } from "../context/ServerChunkRegisterContext";
-import { BaseChunkType } from "./types";
+import { BaseProps } from "./types";
+import { isSyncValue } from "../utils/isSyncValue";
 
-const isSyncModule = <T extends {}>(val: T | Promise<T>): val is T => {
-  return typeof (val as any).then !== "function";
-};
-
-const ServerBaseChunk: BaseChunkType = ({
+const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
   loader,
   redirect,
   ...delegateProps
-}) => {
+}: InputProps & BaseProps<InputProps, ViewState>) => {
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
   const chunkModule = loader();
-  if (!isSyncModule(chunkModule)) {
+  if (!isSyncValue(chunkModule)) {
     throw new Error(
       "loader cannot return a promise on the server. babel should transform a dynamic import into a static import on the server. Please make sure babel is configured properly."
     );
