@@ -16,10 +16,26 @@ export const createMiddlewareWithComponent = (
     warn: jest.fn(),
     error: jest.fn(),
   };
+  const requestManifest = () => {
+    return Promise.resolve(
+      new Proxy(
+        {},
+        {
+          get: (_, prop: string) => {
+            return {
+              js: [`${prop}.1234.js`],
+              css: [],
+            };
+          },
+        }
+      )
+    );
+  };
   app.get(
     "*",
     createStreamMiddleware({
       createApp: () => <Component />,
+      requestManifest,
       logger,
       viewStateCache,
     })

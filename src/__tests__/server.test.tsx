@@ -221,4 +221,31 @@ describe("The server", () => {
         });
     });
   });
+
+  describe("assets", () => {
+    it("should be included based on the loaded chunks", async () => {
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <BaseChunk
+            redirect
+            name="chunkname-1.tsx"
+            loader={() => ({
+              generateViewState: () => Promise.resolve(),
+            })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect("Link", /<chunkname\-1\.tsx\.1234\.js>; rel=preload; as=script/)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain(
+            '<script src="chunkname-1.tsx.1234.js" defer></script>'
+          );
+        });
+    });
+  });
 });
