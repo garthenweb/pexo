@@ -1,13 +1,14 @@
 import React, { FC, useContext } from "react";
+import { ViewStateCache } from "../types/ViewStateCache";
 
-const ViewStateContext = React.createContext({
-  cache: new Map<string, {}>(),
+const ViewStateContext = React.createContext<{ cache: ViewStateCache }>({
+  cache: new Map(),
 });
 
 export const useViewStateCacheMap = () => useContext(ViewStateContext).cache;
 
 interface Props {
-  cache: Map<string, {}>;
+  cache: ViewStateCache;
   children: JSX.Element;
 }
 

@@ -1,27 +1,10 @@
-import React, { FC } from "react";
-import { createStreamMiddleware } from "../server";
+import React from "react";
 import request from "supertest";
-import express from "express";
 import { TestingViewChunk } from "../components";
+import { createMiddlewareWithComponent } from "./utils";
+import BaseChunk from "../components/BaseChunk";
 
 describe("The server", () => {
-  const createMiddlewareWithComponent = (Component: React.ComponentType) => {
-    const app = express();
-    const logger = {
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-    };
-    app.get(
-      "*",
-      createStreamMiddleware({
-        createApp: () => <Component />,
-        logger,
-      })
-    );
-    return { app, logger };
-  };
-
   it("should serve a simple application on the server", async () => {
     const { app, logger } = createMiddlewareWithComponent(() => (
       <>Hello World</>
@@ -182,6 +165,59 @@ describe("The server", () => {
         .expect((res) => {
           expect(logger.error).not.toHaveBeenCalled();
           expect(res.text).toContain("</html>");
+        });
+    });
+  });
+
+  describe("view state cache", () => {
+    it("should fill and use the cache", async (done) => {
+      const viewStateCache = new Map();
+      const generateViewState = jest.fn(
+        ({ multiplicate }: { multiplicate: number }) =>
+          Promise.resolve({
+            foo: 42,
+            bar: 42 * multiplicate,
+          })
+      );
+      const { app, logger } = createMiddlewareWithComponent(
+        () => (
+          <>
+            <BaseChunk
+              name="test"
+              multiplicate={2}
+              loader={() => ({
+                View: ({ bar, foo }: { bar: number; foo: number }) =>
+                  `Hello ${foo} World ${bar}`,
+                generateViewState,
+              })}
+            />
+          </>
+        ),
+        { viewStateCache }
+      );
+
+      request(app)
+        .get("/")
+        .expect("Content-Type", "text/html")
+        .expect(200)
+        .end((err, res1) => {
+          expect(err).toBeFalsy();
+          request(app)
+            .get("/")
+            .expect("Content-Type", "text/html")
+            .expect(200)
+            .end((err, res2) => {
+              expect(err).toBeFalsy();
+              expect(logger.error).not.toHaveBeenCalled();
+              expect(viewStateCache.size).toBe(1);
+              expect(generateViewState).toHaveBeenCalledTimes(1);
+              expect(viewStateCache.values().next().value).toEqual({
+                foo: 42,
+                bar: 84,
+              });
+              expect(res1.text).toBe(res2.text);
+              done();
+            });
         });
     });
   });

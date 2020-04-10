@@ -5,6 +5,8 @@ import { renderStaticChunkTemplate } from "./renderer/renderStaticChunkTemplate"
 import { renderToChunkStream } from "./renderer/renderToChunkStream";
 import { preloadBlockingChunks } from "./loader/preloadBlockingChunks";
 import { Redirect } from "./utils/Redirect";
+import { ViewStateCache } from "./types/ViewStateCache";
+import { enhanceChunksWithViewStateCache } from "./utils/enhanceChunksWithViewStateCache";
 
 export interface Logger {
   info: (message: string) => void;
@@ -15,10 +17,11 @@ export interface Logger {
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
   logger?: Logger;
+  viewStateCache?: ViewStateCache
 }
 
 export const createStreamMiddleware = (config: MiddlewareConfig) => {
-  const { createApp, logger } = Object.assign(
+  const { createApp, logger, viewStateCache } = Object.assign(
     {
       logger: {
         info: console.info.bind(console),
@@ -37,6 +40,12 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         createApp,
         createAppContext,
       });
+      if (viewStateCache) {
+        orderedChunks = enhanceChunksWithViewStateCache(
+          viewStateCache,
+          orderedChunks
+        );
+      }
       try {
         orderedChunks = await preloadBlockingChunks(orderedChunks);
       } catch (throwable) {

@@ -1,30 +1,9 @@
 import React from "react";
-import { act } from "react-dom/test-utils";
-import { mount, unmount } from "../client";
+import { unmount } from "../client";
 import { TestingViewChunk } from "../components";
+import { createRendererWithComponent } from "./utils";
 
 describe("The client", () => {
-  const createRendererWithComponent = (Component: React.ComponentType) =>
-    new Promise<{ app: ReturnType<typeof mount>; container: HTMLDivElement }>(
-      async (resolve) => {
-        let app: ReturnType<typeof mount>;
-        const container = document.createElement("div");
-        const ReactApp = () => <Component />;
-        await act(async () => {
-          app = await mount({
-            container,
-            createApp: () => <ReactApp />,
-          });
-        });
-
-        resolve({
-          // @ts-ignore
-          app,
-          container,
-        });
-      }
-    );
-
   beforeEach(() => {
     process.browser = true;
   });
