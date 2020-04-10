@@ -3,6 +3,7 @@ import { generateChunkCacheKey } from "../utils/cacheKey";
 import { ChunkModule, Loader, BaseProps } from "./types";
 import { useViewStateCacheMap } from "../context/ViewStateCache";
 import { useStaticChunkModuleMap } from "../context/StaticChunkModuleCacheContext";
+import { isSyncValue } from "../utils/isSyncValue";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -40,13 +41,17 @@ const useChunkModule = ({
   name: string;
 }) => {
   const staticChunkModuleCache = useStaticChunkModuleMap();
+  const chunkModuleFromLoader = loader();
+  if (isSyncValue(chunkModuleFromLoader)) {
+    staticChunkModuleCache.set(name, chunkModuleFromLoader);
+  }
   const [syncChunkModule, setSyncChunkModule] = useState(
     staticChunkModuleCache.get(name)
   );
   useEffect(() => {
     let canceled = false;
     if (!syncChunkModule) {
-      Promise.resolve(loader()).then((result) => {
+      Promise.resolve(chunkModuleFromLoader).then((result) => {
         if (!canceled) {
           setSyncChunkModule(result);
           staticChunkModuleCache.set(name, result);
@@ -56,7 +61,12 @@ const useChunkModule = ({
     return () => {
       canceled = true;
     };
-  }, [loader, name, syncChunkModule, setSyncChunkModule]);
+  }, [
+    loader,
+    name,
+    syncChunkModule,
+    setSyncChunkModule,
+  ]);
   return syncChunkModule ?? useChunkModule.LOADING;
 };
 useChunkModule.LOADING = Symbol("useChunkModule.LOADING");

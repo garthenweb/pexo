@@ -7,27 +7,18 @@ import { preloadBlockingChunks } from "./loader/preloadBlockingChunks";
 import { Redirect } from "./utils/Redirect";
 import { ViewStateCache } from "./types/ViewStateCache";
 import { enhanceChunksWithViewStateCache } from "./utils/enhanceChunksWithViewStateCache";
-
-export interface Logger {
-  info: (message: string) => void;
-  warn: (message: string) => void;
-  error: (err: string | Error) => void;
-}
+import { createDefaultLogger, Logger } from "./utils/logger";
 
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
   logger?: Logger;
-  viewStateCache?: ViewStateCache
+  viewStateCache?: ViewStateCache;
 }
 
 export const createStreamMiddleware = (config: MiddlewareConfig) => {
   const { createApp, logger, viewStateCache } = Object.assign(
     {
-      logger: {
-        info: console.info.bind(console),
-        warn: console.warn.bind(console),
-        error: console.error.bind(console),
-      },
+      logger: createDefaultLogger(),
     },
     config
   );

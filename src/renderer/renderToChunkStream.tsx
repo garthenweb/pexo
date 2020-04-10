@@ -52,9 +52,9 @@ const generateChunkNodes = async (chunk: ChunkTemplate) => {
     <script
       key={2}
       defer
-      data-px-chunk-view-state={chunk.chunkCacheKey}
+      data-px-chunk-view-state-cache-key={chunk.chunkCacheKey}
       dangerouslySetInnerHTML={{
-        __html: `window.pxProvider.viewStateCache['${
+        __html: `(window.pxProviderViewStateCache || Object.create(null))['${
           chunk.chunkCacheKey
         }'] = ${JSON.stringify(resolvedViewState)}`,
       }}

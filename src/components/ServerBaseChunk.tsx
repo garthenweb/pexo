@@ -26,7 +26,10 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
     props: delegateProps,
   });
   return (
-    <div data-px-chunk-cache-key={chunkCacheKey} children="__PX_CHUNK/End__" />
+    <div
+      data-px-server-template-chunk-cache-key={chunkCacheKey}
+      children="__PX_CHUNK/End__"
+    />
   );
 };
 

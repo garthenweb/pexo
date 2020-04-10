@@ -116,7 +116,7 @@ describe("The server", () => {
       .expect(200)
       .expect((res) => {
         expect(logger.error).not.toHaveBeenCalled();
-        expect(res.text).toContain("data-px-chunk-view-state");
+        expect(res.text).toContain("data-px-chunk-view-state-cache-key");
         expect(res.text).toContain('{"foo":42,"bar":84}');
       });
   });

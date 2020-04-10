@@ -35,8 +35,8 @@ export const renderStaticChunkTemplate = ({
 };
 
 // a chunk in the template looks like the following:
-// <div data-px-chunk-cache-key="root/filename">__PX_CHUNK/End__</div>
-const CHUNK_TEMPLATE_START = '<div data-px-chunk-cache-key="';
+// <div data-px-server-template-chunk-cache-key="root/filename">__PX_CHUNK/End__</div>
+const CHUNK_TEMPLATE_START = '<div data-px-server-template-chunk-cache-key="';
 const CHUNK_TEMPLATE_END = '">__PX_CHUNK/End__</div>';
 
 const getOrderedChunkIdsFromTemplate = (template: string) => {
