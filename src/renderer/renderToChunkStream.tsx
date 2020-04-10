@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { Writable, PassThrough } from "stream";
 import { ChunkTemplate } from "./renderStaticChunkTemplate";
 import { requestDataForChunks } from "../loader/requestDataForChunks";
+import { executePromiseQueue } from "../utils/executePromiseQueue";
 
 interface Config {
   orderedChunks: ChunkTemplate[];
@@ -20,31 +21,28 @@ export const renderToChunkStream = ({
   stream.pipe(writable);
   stream.unpipe(writable);
 
-  requestDataForChunks(orderedChunks)
-    .reduce(
-      (queue, chunk) =>
-        queue.then(async () => {
-          const chunkNodes = await generateChunkNodes(chunk);
-          const chunkStream = ReactDOMServer.renderToNodeStream(
-            createAppContext(chunkNodes)
-          );
-          chunkStream.pipe(stream, { end: false });
-          await new Promise((resolve) =>
-            chunkStream.on("end", () => {
-              stream.write(chunk.nextTemplateChunk);
-              resolve();
-            })
-          );
-        }),
-      Promise.resolve()
-    )
-    .then(() => stream.end());
+  executePromiseQueue(
+    requestDataForChunks(orderedChunks),
+    async (chunk: ChunkTemplate) => {
+      const chunkNodes = generateChunkNodes(chunk);
+      const chunkStream = ReactDOMServer.renderToNodeStream(
+        createAppContext(chunkNodes)
+      );
+      chunkStream.pipe(stream, { end: false });
+      await new Promise((resolve) =>
+        chunkStream.on("end", () => {
+          stream.write(chunk.nextTemplateChunk);
+          resolve();
+        })
+      );
+    }
+  ).finally(() => stream.end());
 
   return stream;
 };
 
-const generateChunkNodes = async (chunk: ChunkTemplate) => {
-  const resolvedViewState = await chunk.viewState;
+const generateChunkNodes = (chunk: ChunkTemplate) => {
+  const resolvedViewState = chunk.viewState ?? {};
   const chunkNode = chunk.View ? (
     <chunk.View key={1} {...resolvedViewState} />
   ) : null;

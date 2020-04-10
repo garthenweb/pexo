@@ -12,7 +12,7 @@ interface Config {
 
 export interface ChunkTemplate extends Partial<RegistryItem<any, any>> {
   nextTemplateChunk: string;
-  viewState?: Promise<any>;
+  viewState?: any;
 }
 
 export const renderStaticChunkTemplate = ({

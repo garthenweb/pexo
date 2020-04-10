@@ -16,13 +16,9 @@ interface MiddlewareConfig {
 }
 
 export const createStreamMiddleware = (config: MiddlewareConfig) => {
-  const { createApp, logger, viewStateCache } = Object.assign(
-    {
-      logger: createDefaultLogger(),
-    },
-    config
-  );
+  const { createApp, logger = createDefaultLogger(), viewStateCache } = config;
   return async (req: express.Request, res: express.Response) => {
+    const requestViewStateCache = viewStateCache ?? new Map();
     try {
       const createAppContext = (chunkNode: React.ReactNode) => (
         <PxGlobalServerProvider>{chunkNode}</PxGlobalServerProvider>
@@ -31,12 +27,10 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         createApp,
         createAppContext,
       });
-      if (viewStateCache) {
-        orderedChunks = enhanceChunksWithViewStateCache(
-          viewStateCache,
-          orderedChunks
-        );
-      }
+      orderedChunks = enhanceChunksWithViewStateCache(
+        requestViewStateCache,
+        orderedChunks
+      );
       try {
         orderedChunks = await preloadBlockingChunks(orderedChunks);
       } catch (throwable) {

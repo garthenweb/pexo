@@ -1,27 +1,18 @@
 import { ChunkTemplate } from "../renderer/renderStaticChunkTemplate";
 import { Redirect } from "../utils/Redirect";
+import { executePromiseQueue } from "../utils/executePromiseQueue";
+import { requestDataForChunks } from "./requestDataForChunks";
 
 export const preloadBlockingChunks = async (chunks: ChunkTemplate[]) => {
-  const loadingChunks = chunks.map((chunk) => {
-    if (chunk.isRedirect && !chunk.viewState && chunk.generateViewState) {
-      return {
-        ...chunk,
-        viewState: chunk.generateViewState(chunk.props),
-      };
-    }
-    return chunk;
-  });
+  const redirectLoader = chunks.filter(
+    (chunk) => chunk.isRedirect && chunk.generateViewState
+  );
 
-  const redirectLoader = loadingChunks
-    .filter((chunk) => chunk.isRedirect && chunk.viewState)
-    .map((chunk) => chunk.viewState);
-
-  // TODO fire as soon as the first redirect resolved and was positive
-  (await Promise.all(redirectLoader)).forEach((resolvedViewState) => {
-    if (resolvedViewState) {
-      throw new Redirect(resolvedViewState);
+  await executePromiseQueue(requestDataForChunks(redirectLoader), (chunk) => {
+    if (chunk.viewState) {
+      throw new Redirect(chunk.viewState);
     }
   });
 
-  return loadingChunks;
+  return chunks;
 };
