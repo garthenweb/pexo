@@ -1,6 +1,5 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import ReactDOMServer from "react-dom/server";
-import { ReactNode } from "react";
 import { Writable, PassThrough } from "stream";
 import { ChunkTemplate } from "./renderStaticChunkTemplate";
 import { requestDataForChunks } from "../loader/requestDataForChunks";
@@ -36,7 +35,12 @@ export const renderToChunkStream = ({
         })
       );
     }
-  ).finally(() => stream.end());
+  ).finally(() => {
+    stream.write(
+      `<script data-px-runtime>window.__px = window.__px || []; window.__px.push('start')</script>`
+    );
+    stream.end();
+  });
 
   return stream;
 };
@@ -49,12 +53,11 @@ const generateChunkNodes = (chunk: ChunkTemplate) => {
   const scriptNode = chunk.chunkCacheKey ? (
     <script
       key={2}
-      defer
+      type="application/json"
+      data-px-runtime
       data-px-chunk-view-state-cache-key={chunk.chunkCacheKey}
       dangerouslySetInnerHTML={{
-        __html: `(window.pxProviderViewStateCache || Object.create(null))['${
-          chunk.chunkCacheKey
-        }'] = ${JSON.stringify(resolvedViewState)}`,
+        __html: JSON.stringify(resolvedViewState),
       }}
     />
   ) : null;

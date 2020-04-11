@@ -90,10 +90,8 @@ const htmlStart = (header: string) => `
       ${header}
     </head>
     <body>
-      <main>
-`;
-const htmlEnd = `
-      </main>
+      <main>`;
+const htmlEnd = `</main>
     </body>
   </html>
 `;

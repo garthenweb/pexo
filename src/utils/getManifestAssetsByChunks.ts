@@ -9,18 +9,19 @@ export const getManifestAssetsByChunks = (
   logger: Logger
 ) => {
   const bundleNames = chunks.map((chunk) => chunk.chunkName).filter(exists);
-  const assets = {
+  const entryAssets = {
     js: new Set<string>(),
     css: new Set<string>(),
   };
-  const addAsset = (bundle: ManifestItem) => {
-    bundle.js.forEach((asset) => assets.js.add(asset));
-    bundle.css.forEach((asset) => assets.css.add(asset));
+  const chunkAssets = {
+    js: new Set<string>(),
+    css: new Set<string>(),
   };
 
   Object.values(manifest).forEach((bundle) => {
     if (bundle.isEntry) {
-      addAsset(bundle);
+      bundle.js.forEach((asset) => entryAssets.js.add(asset));
+      bundle.css.forEach((asset) => entryAssets.css.add(asset));
     }
   });
 
@@ -32,20 +33,24 @@ export const getManifestAssetsByChunks = (
       );
       return;
     }
-    addAsset(bundle);
+    bundle.js.forEach((asset) => chunkAssets.js.add(asset));
+    bundle.css.forEach((asset) => chunkAssets.css.add(asset));
   });
 
-  const cssAssetLinks = [...assets.css.values()].map(
-    (asset) => `<${asset}>; rel=preload; as=style`
-  );
-  const cssAssetTags = [...assets.css.values()].map(
-    (asset) => `<link href="${asset}" rel="stylesheet" />`
-  );
-  const jsAssetLinks = [...assets.js.values()].map(
-    (asset) => `<${asset}>; rel=preload; as=script`
-  );
-  const jsAssetTags = [...assets.js.values()].map(
-    (asset) => `<script src="${asset}" defer></script>`
+  const cssAssetLinks = [
+    ...entryAssets.css.values(),
+    ...chunkAssets.css.values(),
+  ].map((asset) => `<${asset}>; rel=preload; as=style`);
+  const cssAssetTags = [
+    ...entryAssets.css.values(),
+    ...chunkAssets.css.values(),
+  ].map((asset) => `<link href="${asset}" rel="stylesheet" />`);
+  const jsAssetLinks = [
+    ...entryAssets.js.values(),
+    ...chunkAssets.js.values(),
+  ].map((asset) => `<${asset}>; rel=preload; as=script`);
+  const jsAssetTags = [...entryAssets.js.values()].map(
+    (asset) => `<script src="${asset}" async></script>`
   );
 
   return {

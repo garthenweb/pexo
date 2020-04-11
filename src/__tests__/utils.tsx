@@ -50,11 +50,11 @@ export const createRendererWithComponent = (
   { viewStateCache }: { viewStateCache?: ViewStateCache } = {}
 ) =>
   new Promise<{
-    app: ReturnType<typeof mount>;
+    app: Element;
     container: HTMLElement;
     logger: Logger;
   }>(async (resolve) => {
-    let app: ReturnType<typeof mount>;
+    let app: Element;
     const logger = {
       info: jest.fn(),
       warn: jest.fn(),
@@ -63,7 +63,7 @@ export const createRendererWithComponent = (
     const ReactApp = () => <Component />;
     await act(async () => {
       app = await mount({
-        container,
+        requestContainer: () => container,
         createApp: () => <ReactApp />,
         viewStateCache,
         logger,
