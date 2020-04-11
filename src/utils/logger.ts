@@ -1,7 +1,8 @@
 export const createDefaultLogger = (): Logger => ({
-  info: console.info.bind(console),
-  warn: console.warn.bind(console),
-  error: console.error.bind(console),
+  info: (msg) => console.info(`[${new Date().toISOString()}] [PoXi INFO]`, msg),
+  warn: (msg) => console.info(`[${new Date().toISOString()}] [PoXi WARN]`, msg),
+  error: (msg) =>
+    console.info(`[${new Date().toISOString()}] [PoXi WARN]`, msg),
 });
 
 export interface Logger {
