@@ -25,6 +25,7 @@ export const createMiddlewareWithComponent = (
             return {
               js: [`${prop}.1234.js`],
               css: [],
+              isEntry: false,
             };
           },
         }

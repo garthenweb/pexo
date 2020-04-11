@@ -3,6 +3,7 @@ import path from "path";
 export interface ManifestItem {
   js: string[];
   css: string[];
+  isEntry: boolean;
 }
 
 export interface Manifest {

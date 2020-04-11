@@ -1,4 +1,4 @@
-import { Manifest } from "./requestManifest";
+import { Manifest, ManifestItem } from "./requestManifest";
 import { ChunkTemplate } from "../renderer/renderStaticChunkTemplate";
 import { exists } from "./exists";
 import { Logger } from "./logger";
@@ -13,16 +13,26 @@ export const getManifestAssetsByChunks = (
     js: new Set<string>(),
     css: new Set<string>(),
   };
+  const addAsset = (bundle: ManifestItem) => {
+    bundle.js.forEach((asset) => assets.js.add(asset));
+    bundle.css.forEach((asset) => assets.css.add(asset));
+  };
+
+  Object.values(manifest).forEach((bundle) => {
+    if (bundle.isEntry) {
+      addAsset(bundle);
+    }
+  });
+
   bundleNames.forEach((bundleName) => {
     const bundle = manifest[bundleName];
     if (!bundle) {
       logger.warn(
-        `Tried to resolve assets for chunk with name \`${bundleName}\` using the manifest but did not find anything. This can cause issues while hydration in the client and maybe even errors at runtime.`,
+        `Tried to resolve assets for chunk with name \`${bundleName}\` using the manifest but did not find anything. This can cause issues while hydration in the client and maybe even errors at runtime.`
       );
       return;
     }
-    bundle.js.forEach((asset) => assets.js.add(asset));
-    bundle.css.forEach((asset) => assets.css.add(asset));
+    addAsset(bundle);
   });
 
   const cssAssetLinks = [...assets.css.values()].map(

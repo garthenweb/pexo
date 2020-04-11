@@ -7,10 +7,14 @@ Object.defineProperty(exports, "__esModule", {
 
 exports.default = new Reporter({
   async report({ event, options }) {
-    if (event.type !== "buildSuccess" || process.env.POXI_CONTEXT !== "client") {
+    if (
+      event.type !== "buildSuccess" ||
+      process.env.POXI_CONTEXT !== "client"
+    ) {
       return;
     }
     const { projectRoot } = options;
+    const distDir = path.join(options.projectRoot, "dist");
 
     const manifest = {};
     for (let bundle of event.bundleGraph.getBundles()) {
@@ -21,16 +25,17 @@ exports.default = new Reporter({
       manifest[mainBundleName] = manifest[mainBundleName] || {
         js: [],
         css: [],
+        isEntry: bundle.isEntry,
       };
       if (bundle.type === "js" || bundle.type === "css") {
         manifest[mainBundleName][bundle.type].push(
-          path.relative(projectRoot, bundle.filePath)
+          path.relative(distDir, bundle.filePath)
         );
       }
     }
 
     options.outputFS.writeFile(
-      path.join(options.projectRoot, "dist", "manifest.json"),
+      path.join(distDir, "manifest.json"),
       JSON.stringify(manifest, null, "  ")
     );
   },

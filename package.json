@@ -4,21 +4,35 @@
   "description": "",
   "scripts": {
     "test": "jest",
-    "build:cli": "parcel build --target cli --no-minify ./src/cli/index.ts",
+    "prebuild:cli": "rm -rf dist",
+    "build:cli": "parcel build --target cli --no-cache --no-minify ./src/cli/index.ts",
     "cli": "npm run build:cli && chmod +x ./dist/cli/index.js && ./dist/cli/index.js"
   },
   "targets": {
     "cli": {
       "context": "node",
-      "engines": {
-        "node": ">=12.x"
-      },
       "includeNodeModules": false,
-      "isLibrary": true
+      "isLibrary": true,
+      "sourceMap": true
+    },
+    "server": {
+      "context": "node",
+      "includeNodeModules": false,
+      "sourceMap": true
+    },
+    "client": {
+      "context": "browser",
+      "sourceMap": true
     }
   },
   "author": "Jannick Garthen",
   "license": "MIT",
+  "browserslist": [
+    "last 2 Chrome versions"
+  ],
+  "engines": {
+    "node": ">=12.x"
+  },
   "devDependencies": {
     "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@testing-library/react": "^10.0.2",
