@@ -56,7 +56,7 @@ describe("A hybride app", () => {
         .expect(async (res) => {
           expect(logger.error).not.toHaveBeenCalled();
           process.browser = true;
-          let app: ReturnType<typeof mount>;
+          let clean: () => void;
           try {
             const mainStart = res.text.indexOf("<main");
             const mainEnd = res.text.indexOf("</main>");
@@ -65,7 +65,7 @@ describe("A hybride app", () => {
             const container = div.querySelector("main");
             expect(container).toBeDefined();
 
-            ({ app } = await createRendererWithComponent(
+            ({ clean } = await createRendererWithComponent(
               Application,
               container!,
               { viewStateCache }
@@ -84,8 +84,8 @@ describe("A hybride app", () => {
             reject(error);
           } finally {
             process.browser = void 0;
-            if (app!) {
-              unmount(app!);
+            if (clean!) {
+              clean!();
             }
           }
         });

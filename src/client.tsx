@@ -29,10 +29,9 @@ export const mount = async (config: MountConfig) => {
   await injectGlobalRuntime().ready;
   const container = requestContainer();
   if (!container) {
-    logger.error(
+    throw new Error(
       "A container is expected to be returned from requestContainer, but none was found."
     );
-    return;
   }
 
   hydrateViewStateCache(viewStateCache, container);

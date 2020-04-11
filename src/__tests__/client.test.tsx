@@ -1,38 +1,39 @@
 import React from "react";
-import { unmount } from "../client";
 import { TestingViewChunk } from "../components";
 import { createRendererWithComponent } from "./utils";
 
 describe("The client", () => {
+  let container: HTMLElement, clean: () => void;
   beforeEach(() => {
     process.browser = true;
   });
 
   afterEach(() => {
     process.browser = void 0;
+    if (clean) {
+      clean();
+    }
   });
 
   it("should render a simple application in the client", async () => {
-    const { container, app } = await createRendererWithComponent(() => (
+    ({ container, clean } = await createRendererWithComponent(() => (
       <div>Hello World</div>
-    ));
+    )));
     expect(container.innerHTML).toContain("Hello World");
-    unmount(app);
   });
 
   it("should render sync chunks", async () => {
-    const { container, app } = await createRendererWithComponent(() => (
+    ({ container, clean } = await createRendererWithComponent(() => (
       <>
         <TestingViewChunk loader={() => ({ View: () => "Hello" })} />
         <TestingViewChunk loader={() => ({ View: () => " World" })} />
       </>
-    ));
+    )));
     expect(container.innerHTML).toContain("Hello World");
-    unmount(app);
   });
 
   it("should render sync chunks with properties", async () => {
-    const { container, app } = await createRendererWithComponent(() => (
+    ({ container, clean } = await createRendererWithComponent(() => (
       <TestingViewChunk
         input="World"
         loader={() => ({
@@ -42,13 +43,12 @@ describe("The client", () => {
           }),
         })}
       />
-    ));
+    )));
     expect(container.innerHTML).toContain("Hello World");
-    unmount(app);
   });
 
   it("should render async chunks", async () => {
-    const { container, app } = await createRendererWithComponent(() => (
+    ({ container, clean } = await createRendererWithComponent(() => (
       <>
         <TestingViewChunk
           loader={() => Promise.resolve({ View: () => "Hello" })}
@@ -57,13 +57,12 @@ describe("The client", () => {
           loader={() => Promise.resolve({ View: () => " World" })}
         />
       </>
-    ));
+    )));
     expect(container.innerHTML).toContain("Hello World");
-    unmount(app);
   });
 
   it("should render async chunks with properties", async () => {
-    const { container, app } = await createRendererWithComponent(() => (
+    ({ container, clean } = await createRendererWithComponent(() => (
       <TestingViewChunk
         input="World"
         loader={() =>
@@ -75,13 +74,12 @@ describe("The client", () => {
           })
         }
       />
-    ));
+    )));
     expect(container.innerHTML).toContain("Hello World");
-    unmount(app);
   });
 
   it("should render async chunks with async properties", async () => {
-    const { container, app } = await createRendererWithComponent(() => (
+    ({ container, clean } = await createRendererWithComponent(() => (
       <TestingViewChunk
         input="World"
         loader={() =>
@@ -94,8 +92,7 @@ describe("The client", () => {
           })
         }
       />
-    ));
+    )));
     expect(container.innerHTML).toContain("Hello World");
-    unmount(app);
   });
 });

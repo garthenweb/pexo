@@ -240,11 +240,8 @@ describe("The server", () => {
         .get("/")
         .expect(200)
         .expect("Link", /<chunkname\-1\.tsx\.1234\.js>; rel=preload; as=script/)
-        .expect((res) => {
+        .expect(() => {
           expect(logger.error).not.toHaveBeenCalled();
-          expect(res.text).toContain(
-            '<script src="chunkname-1.tsx.1234.js" defer></script>'
-          );
         });
     });
   });

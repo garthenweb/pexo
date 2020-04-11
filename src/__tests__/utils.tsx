@@ -2,7 +2,7 @@ import React from "react";
 import { createStreamMiddleware } from "../server";
 import express from "express";
 import { act } from "react-dom/test-utils";
-import { mount } from "../client";
+import { mount, unmount } from "../client";
 import { ViewStateCache } from "../types/ViewStateCache";
 import { Logger } from "../utils/logger";
 
@@ -50,7 +50,7 @@ export const createRendererWithComponent = (
   { viewStateCache }: { viewStateCache?: ViewStateCache } = {}
 ) =>
   new Promise<{
-    app: Element;
+    clean: () => void;
     container: HTMLElement;
     logger: Logger;
   }>(async (resolve) => {
@@ -60,6 +60,7 @@ export const createRendererWithComponent = (
       warn: jest.fn(),
       error: jest.fn(),
     };
+    globalThis.__px = ["start"];
     const ReactApp = () => <Component />;
     await act(async () => {
       app = await mount({
@@ -70,9 +71,10 @@ export const createRendererWithComponent = (
       });
     });
 
+    const clean = () => unmount(app);
+
     resolve({
-      // @ts-ignore
-      app,
+      clean,
       container,
       logger,
     });
