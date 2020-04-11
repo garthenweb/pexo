@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { program } from "commander";
 import path from "path";
-import { spawn } from "child_process";
+import { spawn, SpawnOptionsWithoutStdio } from "child_process";
 
 interface Options {
   clientEntry: string;
@@ -23,13 +23,18 @@ program
   .action(({ clientEntry, serverEntry }: Options) => {
     const fullServerEntry = path.join(process.cwd(), serverEntry);
     const fullClientEntry = path.join(process.cwd(), clientEntry);
-
+    console.log("");
+    console.log("[PoXi] BUILD APPLICATION");
+    console.log("");
     const parcelServerProcess = spawnServerBuildDev(fullServerEntry);
     const parcelClientProcess = spawnClientWatch(fullClientEntry);
     parcelClientProcess.on("exit", () => {
       process.exit(1);
     });
     parcelServerProcess.on("exit", () => {
+      console.log("");
+      console.log("[PoXi] START SERVER");
+      console.log("");
       const serverProcess = spawnServerRun();
       serverProcess.on("exit", () => {
         process.exit(1);
@@ -52,11 +57,12 @@ const spawnClientWatch = (entry: string) => {
       "--no-cache",
       entry,
     ],
-    { env: Object.assign({ POXI_CONTEXT: "client" }, process.env) }
+    {
+      shell: true,
+      stdio: ["pipe", "inherit", "inherit"],
+      env: Object.assign({ POXI_CONTEXT: "client" }, process.env),
+    }
   );
-  childProcess.stdout.pipe(process.stdout);
-  childProcess.stderr.pipe(process.stderr);
-  process.stdin.pipe(childProcess.stdin);
   return childProcess;
 };
 
@@ -74,23 +80,22 @@ const spawnServerBuildDev = (entry: string) => {
       "--no-minify",
       "--no-cache",
       entry,
-      // "--port 9898",
     ],
-    { env: Object.assign({ POXI_CONTEXT: "server" }, process.env) }
+    {
+      shell: true,
+      stdio: ["pipe", "inherit", "inherit"],
+      env: Object.assign({ POXI_CONTEXT: "server" }, process.env),
+    }
   );
-  childProcess.stdout.pipe(process.stdout);
-  childProcess.stderr.pipe(process.stderr);
-  process.stdin.pipe(childProcess.stdin);
   return childProcess;
 };
 
 const spawnServerRun = () => {
   const childProcess = spawn("node", [path.join(distDir, "server.js")], {
+    shell: true,
+    stdio: ["pipe", "inherit", "inherit"],
     env: process.env,
   });
-  childProcess.stdout.pipe(process.stdout);
-  childProcess.stderr.pipe(process.stderr);
-  process.stdin.pipe(childProcess.stdin);
   return childProcess;
 };
 
