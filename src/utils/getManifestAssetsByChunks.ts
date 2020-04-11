@@ -16,7 +16,9 @@ export const getManifestAssetsByChunks = (
   bundleNames.forEach((bundleName) => {
     const bundle = manifest[bundleName];
     if (!bundle) {
-      logger.warn(`Cannot find bundle for chunk name ${bundleName}`);
+      logger.warn(
+        `Tried to resolve assets for chunk with name \`${bundleName}\` using the manifest but did not find anything. This can cause issues while hydration in the client and maybe even errors at runtime.`,
+      );
       return;
     }
     bundle.js.forEach((asset) => assets.js.add(asset));

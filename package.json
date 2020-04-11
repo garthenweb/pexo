@@ -3,13 +3,26 @@
   "version": "0.0.0",
   "description": "",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build:cli": "parcel build --target cli --no-minify ./src/cli/index.ts",
+    "cli": "npm run build:cli && chmod +x ./dist/cli/index.js && ./dist/cli/index.js"
+  },
+  "targets": {
+    "cli": {
+      "context": "node",
+      "engines": {
+        "node": ">=12.x"
+      },
+      "includeNodeModules": false,
+      "isLibrary": true
+    }
   },
   "author": "Jannick Garthen",
   "license": "MIT",
   "devDependencies": {
     "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@testing-library/react": "^10.0.2",
+    "@types/commander": "^2.12.2",
     "@types/express": "^4.17.4",
     "@types/jest": "^25.2.1",
     "@types/node": "^13.11.0",
@@ -21,21 +34,23 @@
     "@types/supertest": "^2.0.8",
     "express": "^4.17.1",
     "jest": "^25.2.7",
-    "supertest": "^4.0.2"
+    "supertest": "^4.0.2",
+    "typescript": "^3.8.3"
   },
   "dependencies": {
     "@babel/preset-env": "^7.9.0",
     "@babel/preset-react": "^7.9.4",
     "@babel/preset-typescript": "^7.9.0",
+    "commander": "^5.0.0",
     "compression": "^1.7.4",
     "core-js": "^3.6.4",
     "object-hash": "^2.0.3",
     "parcel": "^2.0.0-nightly.196",
+    "parcel-reporter-poxi-manifest": "file:./src/cli/parcel-reporter-poxi-manifest",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-router": "^5.1.2",
     "react-router-dom": "^5.1.2",
-    "shallowequal": "^1.1.0",
-    "parcel-reporter-poxi-manifest": "file:./src/cli/parcel-reporter-poxi-manifest"
+    "shallowequal": "^1.1.0"
   }
 }

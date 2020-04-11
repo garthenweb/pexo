@@ -10,9 +10,27 @@ export interface Manifest {
 }
 
 export const createDefaultManifestRequester = (filePath?: string) => {
-  return () => {
-    return Promise.resolve(
-      require(filePath ?? path.join(process.cwd(), "manifest.json")) as Manifest
-    );
+  const requestManifest = async ({
+    shouldWatch = true,
+  }): Promise<Manifest | null> => {
+    try {
+      return require(filePath ??
+        path.join(process.cwd(), "dist", "manifest.json")) as Manifest;
+    } catch {
+      if (!shouldWatch) {
+        return null;
+      }
+      return await new Promise((resolve) => {
+        const tickId = setInterval(async () => {
+          const manifest = await requestManifest({ shouldWatch: false });
+          if (manifest) {
+            clearInterval(tickId);
+            resolve(manifest);
+          }
+        }, 1000);
+      });
+    }
   };
+
+  return requestManifest;
 };

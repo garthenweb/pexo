@@ -28,7 +28,9 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     viewStateCache,
     requestManifest = createDefaultManifestRequester(),
   } = config;
-  const manifest = requestManifest();
+  const watchManifest = requestManifest({
+    shouldWatch: process.env.NODE_ENV !== "production",
+  });
   return async (req: express.Request, res: express.Response) => {
     const requestViewStateCache = viewStateCache ?? new Map();
     try {
@@ -53,12 +55,11 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         }
         logger.error(throwable);
       }
-
-      const assets = getManifestAssetsByChunks(
-        await manifest,
-        orderedChunks,
-        logger
-      );
+      const manifest = await watchManifest;
+      if (!manifest) {
+        throw new Error("Cannot render the client without a manifest file");
+      }
+      const assets = getManifestAssetsByChunks(manifest, orderedChunks, logger);
 
       res.setHeader("Content-Type", "text/html");
       res.setHeader(

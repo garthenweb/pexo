@@ -7,7 +7,7 @@ Object.defineProperty(exports, "__esModule", {
 
 exports.default = new Reporter({
   async report({ event, options }) {
-    if (event.type !== "buildSuccess") {
+    if (event.type !== "buildSuccess" || process.env.POXI_CONTEXT !== "client") {
       return;
     }
     const { projectRoot } = options;
