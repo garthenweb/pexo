@@ -1,15 +1,19 @@
 import React, { FC, useContext } from "react";
 import { ChunkModule } from "../components/types";
 
-const StaticChunkModuleCacheContext = React.createContext({
-  cache: new Map<string, ChunkModule<any, any>>(),
+export type StaticChunkModuleCache = Map<string, ChunkModule<any, any>>;
+
+const StaticChunkModuleCacheContext = React.createContext<{
+  cache: StaticChunkModuleCache;
+}>({
+  cache: new Map(),
 });
 
 export const useStaticChunkModuleMap = () =>
   useContext(StaticChunkModuleCacheContext).cache;
 
 interface Props {
-  cache: Map<string, ChunkModule<any, any>>;
+  cache: StaticChunkModuleCache;
   children: JSX.Element;
 }
 

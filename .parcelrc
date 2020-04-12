@@ -1,5 +1,24 @@
 {
-  "extends": ["@parcel/config-default"],
+  "extends": [
+    "@parcel/config-default"
+  ],
+  "runtimes": {
+    "browser": [
+      "@parcel/runtime-js",
+      "@parcel/runtime-browser-hmr",
+      "@parcel/runtime-react-refresh",
+      "parcel-runtime-poxi-dynamic-imports"
+    ],
+    "service-worker": [
+      "@parcel/runtime-js"
+    ],
+    "web-worker": [
+      "@parcel/runtime-js"
+    ],
+    "node": [
+      "@parcel/runtime-js"
+    ]
+  },
   "reporters": [
     "@parcel/reporter-cli",
     "@parcel/reporter-dev-server",

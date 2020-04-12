@@ -9,6 +9,7 @@ import {
   clearGlobalRuntime,
 } from "./runtime/injectGlobalRuntime";
 import { cleanRuntime } from "./runtime/cleanRuntime";
+import { hydrateRequiredChunks } from "./runtime/dynamicImports";
 
 interface MountConfig {
   requestContainer: () => Element;
@@ -26,6 +27,7 @@ export const mount = async (config: MountConfig) => {
   } = config;
   const node = createApp();
 
+  const staticChunkModuleCache = await hydrateRequiredChunks();
   await injectGlobalRuntime().ready;
   const container = requestContainer();
   if (!container) {
@@ -39,7 +41,10 @@ export const mount = async (config: MountConfig) => {
 
   const renderMethod = viewStateCache.size ? "hydrate" : "render";
   ReactDOM[renderMethod](
-    <PxGlobalClientProvider viewStateCache={viewStateCache}>
+    <PxGlobalClientProvider
+      viewStateCache={viewStateCache}
+      staticChunkModuleCache={staticChunkModuleCache}
+    >
       {node}
     </PxGlobalClientProvider>,
     container

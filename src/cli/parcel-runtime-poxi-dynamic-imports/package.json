@@ -1,0 +1,14 @@
+{
+  "name": "parcel-runtime-poxi-dynamic-imports",
+  "version": "1.0.0",
+  "description": "Dynamic import runtime for PoXi",
+  "main": "index.js",
+  "engines": {
+    "parcel": "^2.0.0-nightly.196"
+  },
+  "dependencies": {
+    "@parcel/plugin": "^2.0.0-nightly.208"
+  },
+  "author": "Jannick Garthen",
+  "license": "MIT"
+}

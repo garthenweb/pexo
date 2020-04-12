@@ -13,6 +13,7 @@ import {
   createDefaultManifestRequester,
 } from "./utils/requestManifest";
 import { getManifestAssetsByChunks } from "./utils/getManifestAssetsByChunks";
+import { getHydrationChunkScript } from "./utils/getHydrationChunkScript";
 
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
@@ -60,13 +61,21 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         throw new Error("Cannot render the client without a manifest file");
       }
       const assets = getManifestAssetsByChunks(manifest, orderedChunks, logger);
+      const hydrationChunkScript = getHydrationChunkScript(orderedChunks);
 
       res.setHeader("Content-Type", "text/html");
       res.setHeader(
         "Link",
         [...assets.css.links, ...assets.js.links].join(", ")
       );
-      res.write(htmlStart([...assets.css.tags, ...assets.js.tags].join("")));
+      res.write(
+        htmlStart(
+          `${hydrationChunkScript}${[
+            ...assets.css.tags,
+            ...assets.js.tags,
+          ].join("")}`
+        )
+      );
 
       const stream = renderToChunkStream({
         orderedChunks,

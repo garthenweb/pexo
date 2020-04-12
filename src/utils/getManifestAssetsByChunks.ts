@@ -1,4 +1,4 @@
-import { Manifest, ManifestItem } from "./requestManifest";
+import { Manifest } from "./requestManifest";
 import { ChunkTemplate } from "../renderer/renderStaticChunkTemplate";
 import { exists } from "./exists";
 import { Logger } from "./logger";

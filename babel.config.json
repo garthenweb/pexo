@@ -6,7 +6,8 @@
         "pragma": "React.createElement",
         "pragmaFrag": "React.Fragment"
       }
-    ]
+    ],
+    "./src/cli/babel-poxi-transform"
   ],
   "presets": [
     [

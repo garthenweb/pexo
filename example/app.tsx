@@ -1,11 +1,11 @@
 import React from "react";
-import BaseChunk from "../src/components/BaseChunk";
+import { Chunk } from "../src/components";
 
 const App = () => {
   return (
     <>
-      <BaseChunk name="test1" loader={() => require("./chunks/chunk1")} />
-      <BaseChunk name="test2" loader={() => require("./chunks/chunk2")} />
+      <Chunk loader={() => import("./chunks/chunk1")} />
+      <Chunk loader={() => import("./chunks/chunk2")} />
     </>
   );
 };

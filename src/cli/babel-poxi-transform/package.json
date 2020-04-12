@@ -1,0 +1,14 @@
+{
+  "name": "babel-poxi-transform",
+  "version": "1.0.0",
+  "description": "Babel transform to enhance chunks with additional data",
+  "main": "index.js",
+  "engines": {
+    "parcel": "^2.0.0-nightly.196"
+  },
+  "dependencies": {
+    "@parcel/plugin": "^2.0.0-nightly.208"
+  },
+  "author": "Jannick Garthen",
+  "license": "MIT"
+}

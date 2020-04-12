@@ -5,6 +5,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true,
 });
 
+// https://regex101.com/r/AM0c3m/1
+const REGEX_REMOVE_EXTENSION = /(?:(?:\/index)|(?:\/index)?\.(?:\w|\d)+)$/;
+
 exports.default = new Reporter({
   async report({ event, options }) {
     if (
@@ -21,7 +24,7 @@ exports.default = new Reporter({
       const mainBundleName = path.relative(
         projectRoot,
         bundle.getMainEntry().filePath
-      );
+      ).replace(REGEX_REMOVE_EXTENSION, "");
       manifest[mainBundleName] = manifest[mainBundleName] || {
         js: [],
         css: [],
