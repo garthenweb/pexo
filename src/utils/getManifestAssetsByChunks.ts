@@ -46,9 +46,13 @@ export const getManifestAssetsByChunks = (
     ...chunkAssets.css.values(),
   ].map((asset) => `<link href="${asset}" rel="stylesheet" />`);
   const jsAssetLinks = [
-    ...entryAssets.js.values(),
-    ...chunkAssets.js.values(),
-  ].map((asset) => `<${asset}>; rel=preload; as=script`);
+    ...Array.from(entryAssets.js.values()).map(
+      (asset) => `<${asset}>; rel=preload; as=script`
+    ),
+    ...Array.from(chunkAssets.js.values()).map(
+      (asset) => `<${asset}>; rel=prefetch; as=script`
+    ),
+  ];
   const jsAssetTags = [...entryAssets.js.values()].map(
     (asset) => `<script src="${asset}" async></script>`
   );
