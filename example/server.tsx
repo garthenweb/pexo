@@ -8,7 +8,8 @@ const expressApp = express();
 expressApp.use(
   "/public",
   express.static(path.join(process.cwd(), "dist", "public"), {
-    maxAge: 1000 * 60 * 60 * 24 * 360,
+    maxAge:
+      process.env.NODE_ENV === "production" ? 1000 * 60 * 60 * 24 * 360 : 2500,
   })
 );
 expressApp.use(
