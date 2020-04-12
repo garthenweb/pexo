@@ -5,8 +5,8 @@
   "scripts": {
     "test": "jest",
     "prebuild:cli": "rm -rf dist",
-    "build:cli": "parcel build --target cli --no-cache --no-minify ./src/cli/index.ts",
-    "cli": "npm run build:cli && chmod +x ./dist/cli/index.js && ./dist/cli/index.js"
+    "build:cli": "parcel build --target cli --no-cache --no-minify ./src/cli/cli.ts",
+    "cli": "npm run build:cli && chmod +x ./dist/cli/cli.js && ./dist/cli/cli.js"
   },
   "targets": {
     "cli": {

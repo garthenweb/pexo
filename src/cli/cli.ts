@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { program } from "commander";
 import path from "path";
-import { spawn, SpawnOptionsWithoutStdio } from "child_process";
+import { spawn } from "child_process";
 
 interface Options {
   clientEntry: string;
