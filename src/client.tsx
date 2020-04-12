@@ -25,10 +25,13 @@ export const mount = async (config: MountConfig) => {
     viewStateCache = new Map(),
     requestContainer,
   } = config;
-  const node = createApp();
 
-  const staticChunkModuleCache = await hydrateRequiredChunks();
-  await injectGlobalRuntime().ready;
+  const [staticChunkModuleCache, node] = await Promise.all([
+    hydrateRequiredChunks(),
+    createApp(),
+    injectGlobalRuntime().ready,
+  ]);
+
   const container = requestContainer();
   if (!container) {
     throw new Error(
