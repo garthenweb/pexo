@@ -5,6 +5,7 @@ import { createStreamMiddleware } from "../src/server";
 import App from "./app";
 
 const expressApp = express();
+
 expressApp.use("/favicon.ico", (req, res) => res.sendStatus(404));
 expressApp.use(
   "/public",
@@ -13,7 +14,8 @@ expressApp.use(
       process.env.NODE_ENV === "production" ? 1000 * 60 * 60 * 24 * 360 : 2500,
   })
 );
-expressApp.use(
+
+expressApp.get(
   "*",
   createStreamMiddleware({
     createApp: () => <App />,

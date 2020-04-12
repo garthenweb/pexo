@@ -1,5 +1,6 @@
 import React from "react";
 import express from "express";
+import { StaticRouter } from "react-router-dom";
 import { PxGlobalServerProvider } from "./context/GlobalContext";
 import { renderStaticChunkTemplate } from "./renderer/renderStaticChunkTemplate";
 import { renderToChunkStream } from "./renderer/renderToChunkStream";
@@ -36,7 +37,9 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     const requestViewStateCache = viewStateCache ?? new Map();
     try {
       const createAppContext = (chunkNode: React.ReactNode) => (
-        <PxGlobalServerProvider>{chunkNode}</PxGlobalServerProvider>
+        <StaticRouter location={req.url}>
+          <PxGlobalServerProvider>{chunkNode}</PxGlobalServerProvider>
+        </StaticRouter>
       );
       let orderedChunks = renderStaticChunkTemplate({
         createApp,
