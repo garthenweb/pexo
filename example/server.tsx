@@ -5,6 +5,7 @@ import { createStreamMiddleware } from "../src/server";
 import App from "./app";
 
 const expressApp = express();
+expressApp.use("/favicon.ico", (req, res) => res.sendStatus(404));
 expressApp.use(
   "/public",
   express.static(path.join(process.cwd(), "dist", "public"), {
