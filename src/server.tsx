@@ -34,6 +34,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     shouldWatch: process.env.NODE_ENV !== "production",
   });
   return async (req: express.Request, res: express.Response) => {
+    logger.info(`Receive request with url \`${req.url}\``);
     const requestViewStateCache = viewStateCache ?? new Map();
     try {
       const createAppContext = (chunkNode: React.ReactNode) => (
@@ -66,6 +67,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       const assets = getManifestAssetsByChunks(manifest, orderedChunks, logger);
       const hydrationChunkScript = getHydrationChunkScript(orderedChunks);
 
+      logger.info(`Start writing response for request with url \`${req.url}\``);
       res.setHeader("Content-Type", "text/html");
       res.setHeader(
         "Link",
@@ -88,6 +90,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       stream.on("end", () => {
         res.write(htmlEnd);
         res.end();
+        logger.info(`End response for request with url \`${req.url}\``);
       });
     } catch (err) {
       logger.error(err);
