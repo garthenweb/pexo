@@ -1,4 +1,4 @@
-import React, { FC, useCallback } from "react";
+import React, { FC, useCallback, useRef } from "react";
 import ReactDOM from "react-dom";
 import { Route as ReactRouterRoute, useLocation } from "react-router-dom";
 import { createLocation } from "history";
@@ -21,13 +21,14 @@ const usePreFetch = (
 ) => {
   const routerContext = useClientRouterContext();
   const currentLocation = useLocation();
-  const shouldPreFetch =
-    routerContext.preloadUrl === path && currentLocation.pathname !== path;
+  const isAlreadyActive = currentLocation.pathname === path;
+  const shouldPreFetch = routerContext.preloadUrl === path && !isAlreadyActive;
   const SharedGlobalClientProvider = useSharedGlobalClientProvider();
+  const didPreFetch = useRef(isAlreadyActive);
 
   useIdleCallback(
     useCallback(() => {
-      if (!shouldPreFetch) {
+      if (!shouldPreFetch || didPreFetch.current) {
         return;
       }
       let fragment = document.createDocumentFragment();
@@ -40,11 +41,12 @@ const usePreFetch = (
         </VirtualEnvironmentProvider>,
         fragment
       );
+      didPreFetch.current = true;
       return () => {
         ReactDOM.unmountComponentAtNode(fragment);
         (fragment as any) = null;
       };
-    }, [shouldPreFetch, path, Component]),
+    }, [shouldPreFetch, path, Component, didPreFetch]),
     { timeout: 300 }
   );
 };
