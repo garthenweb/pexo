@@ -1,9 +1,10 @@
 import React, { FC } from "react";
 import { ViewStateCache } from "../types/ViewStateCache";
-import { ViewStateCacheProvider } from "./ViewStateCache";
+import { ViewStateCacheProvider, useViewStateCacheMap } from "./ViewStateCache";
 import {
   StaticChunkModuleProvider,
   StaticChunkModuleCache,
+  useStaticChunkModuleMap,
 } from "./StaticChunkModuleCacheContext";
 import { ClientRouterProvider } from "./ClientRouterContext";
 
@@ -14,6 +15,7 @@ interface ClientProps {
   staticChunkModuleCache: StaticChunkModuleCache;
   children: JSX.Element;
 }
+
 export const PxGlobalClientProvider: FC<ClientProps> = (props) => (
   <ViewStateCacheProvider cache={props.viewStateCache}>
     <StaticChunkModuleProvider cache={props.staticChunkModuleCache}>
@@ -21,3 +23,16 @@ export const PxGlobalClientProvider: FC<ClientProps> = (props) => (
     </StaticChunkModuleProvider>
   </ViewStateCacheProvider>
 );
+
+export const useSharedGlobalClientProvider = () => {
+  const viewStateCache = useViewStateCacheMap();
+  const staticChunkModuleCache = useStaticChunkModuleMap();
+  return ({ children }: { children: JSX.Element }) => (
+    <PxGlobalClientProvider
+      viewStateCache={viewStateCache}
+      staticChunkModuleCache={staticChunkModuleCache}
+    >
+      {children}
+    </PxGlobalClientProvider>
+  );
+};
