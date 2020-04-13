@@ -28,13 +28,13 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     createApp,
     logger = createDefaultLogger(),
     viewStateCache,
-    requestManifest = createDefaultManifestRequester(),
+    requestManifest = createDefaultManifestRequester(logger),
   } = config;
-  const watchManifest = requestManifest({
-    shouldWatch: process.env.NODE_ENV !== "production",
-  });
   return async (req: express.Request, res: express.Response) => {
     logger.info(`Receive request with url \`${req.url}\``);
+    const watchManifest = requestManifest({
+      shouldWatch: process.env.NODE_ENV !== "production",
+    });
     const requestViewStateCache = viewStateCache ?? new Map();
     try {
       const createAppContext = (chunkNode: React.ReactNode) => (
