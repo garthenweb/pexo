@@ -239,7 +239,7 @@ describe("The server", () => {
       await request(app)
         .get("/")
         .expect(200)
-        .expect("Link", /<chunkname\-1\.tsx\.1234\.js>; rel=preload; as=script/)
+        .expect("Link", /<chunkname\-1\.tsx\.1234\.js>; rel=prefetch; as=script/)
         .expect(() => {
           expect(logger.error).not.toHaveBeenCalled();
         });
