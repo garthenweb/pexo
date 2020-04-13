@@ -3,6 +3,7 @@ import express from "express";
 import path from "path";
 import { createStreamMiddleware } from "../src/server";
 import App from "./app";
+import { createPluginStyledComponents } from "../src/plugins";
 
 const expressApp = express();
 
@@ -19,6 +20,7 @@ expressApp.get(
   "*",
   createStreamMiddleware({
     createApp: () => <App />,
+    plugins: [createPluginStyledComponents()],
   })
 );
 

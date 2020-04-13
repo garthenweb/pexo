@@ -10,12 +10,14 @@ import {
 } from "./runtime/injectGlobalRuntime";
 import { cleanRuntime } from "./runtime/cleanRuntime";
 import { hydrateRequiredChunks } from "./runtime/dynamicImports";
+import { Plugin } from "./plugins";
 
 interface MountConfig {
   requestContainer: () => Element;
   createApp: () => JSX.Element;
   viewStateCache?: ViewStateCache;
   logger?: Logger;
+  plugins?: Plugin[];
 }
 
 export const mount = async (config: MountConfig) => {
@@ -24,6 +26,7 @@ export const mount = async (config: MountConfig) => {
     logger = createDefaultLogger(),
     viewStateCache = new Map(),
     requestContainer,
+    plugins = [],
   } = config;
 
   const [staticChunkModuleCache, node] = await Promise.all([
@@ -39,6 +42,9 @@ export const mount = async (config: MountConfig) => {
     );
   }
 
+  if (plugins.includes("styled-components")) {
+    rearrangeStyledComponentsStyles(container);
+  }
   hydrateViewStateCache(viewStateCache, container);
   cleanRuntime(container);
 
@@ -79,4 +85,21 @@ const hydrateViewStateCache = (
       JSON.parse(el.innerHTML)
     );
   });
+};
+
+const rearrangeStyledComponentsStyles = (container: Element) => {
+  const styles = [
+    ...container.querySelectorAll<HTMLStyleElement>("style[data-styled]"),
+  ];
+  if (styles.length) {
+    const head = document.querySelector("head") as HTMLHeadElement;
+    const styleContent = styles.reduce(
+      (styles, el) => `${styles}${el.innerHTML}`,
+      ""
+    );
+    const firstStyle = styles.slice(0, 1)[0];
+    firstStyle.innerHTML = styleContent;
+    head?.appendChild(firstStyle);
+    styles.slice(1).forEach((el) => el.remove());
+  }
 };

@@ -15,12 +15,14 @@ import {
 } from "./utils/requestManifest";
 import { getManifestAssetsByChunks } from "./utils/getManifestAssetsByChunks";
 import { getHydrationChunkScript } from "./utils/getHydrationChunkScript";
+import { Plugin } from "./plugins";
 
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
   logger?: Logger;
   viewStateCache?: ViewStateCache;
   requestManifest?: () => Promise<Manifest>;
+  plugins?: Plugin[];
 }
 
 export const createStreamMiddleware = (config: MiddlewareConfig) => {
@@ -29,6 +31,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     logger = createDefaultLogger(),
     viewStateCache,
     requestManifest = createDefaultManifestRequester(logger),
+    plugins = [],
   } = config;
   return async (req: express.Request, res: express.Response) => {
     logger.info(`Receive request with url \`${req.url}\``);
@@ -48,7 +51,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       });
       orderedChunks = enhanceChunksWithViewStateCache(
         requestViewStateCache,
-        orderedChunks
+        orderedChunks,
       );
       try {
         orderedChunks = await preloadBlockingChunks(orderedChunks);
@@ -85,6 +88,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       const stream = renderToChunkStream({
         orderedChunks,
         createAppContext,
+        plugins
       });
       stream.pipe(res, { end: false });
       stream.on("end", () => {

@@ -1,15 +1,24 @@
 import React, { FC } from "react";
+import styled from "styled-components";
 
 interface Props {
   title: string;
   subTitle?: string;
 }
 
+const Wrapper = styled.div`
+  padding: 50px;
+`;
+
+const Title = styled.div`
+  font-weight: bold;
+`;
+
 export const View: FC<Props> = ({ title, subTitle }) => (
-  <div>
-    First Chunk: {title}
+  <Wrapper>
+    First Chunk: <Title>{title}</Title>
     {subTitle && <div>On page {subTitle}</div>}
-  </div>
+  </Wrapper>
 );
 
 interface InputProps {
