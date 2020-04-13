@@ -95,4 +95,26 @@ describe("The client", () => {
     )));
     expect(container.innerHTML).toContain("Hello World");
   });
+
+  describe("partial data fetching", () => {
+    it("should allow generator functions", async () => {
+      ({ container, clean } = await createRendererWithComponent(() => (
+        <TestingViewChunk
+          start={5}
+          loader={() => ({
+            View: ({ value }: { value: number }) => <div>{value}</div>,
+            generateViewState: async function* ({ start }: { start: number }) {
+              yield { value: start + 1 };
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              yield { value: start + 2 };
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              yield { value: start + 3 };
+            }
+          })}
+        />
+      )));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(container.innerHTML).toContain("<div>8</div>");
+    });
+  });
 });

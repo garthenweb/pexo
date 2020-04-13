@@ -1,4 +1,5 @@
 import { ChunkTemplate } from "../renderer/renderStaticChunkTemplate";
+import { isGeneratorValue } from "../utils/isGeneratorValue";
 
 export const requestDataForChunks = (
   chunks: ChunkTemplate[]
@@ -7,9 +8,19 @@ export const requestDataForChunks = (
     (chunk) =>
       new Promise((resolve) => {
         if (chunk.generateViewState && !chunk.viewState) {
-          Promise.resolve(
-            chunk.generateViewState(chunk.props)
-          ).then((viewState) => resolve({ ...chunk, viewState }));
+          Promise.resolve(chunk.generateViewState(chunk.props)).then(
+            async (viewState) => {
+              if (!isGeneratorValue(viewState)) {
+                resolve({ ...chunk, viewState });
+                return;
+              }
+              let lastValue;
+              for await (const value of viewState) {
+                lastValue = value;
+              }
+              resolve({ ...chunk, viewState: lastValue });
+            }
+          );
           return;
         }
 

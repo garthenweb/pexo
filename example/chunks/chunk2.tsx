@@ -16,13 +16,14 @@ interface InputProps {
   page?: string;
 }
 
-export const generateViewState = (inputProps: InputProps): Promise<Props> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        title: "Super awesome data, but a bit slower",
-        subTitle: inputProps.page,
-      });
-    }, 700);
-  });
+export const generateViewState = async function* (inputProps: InputProps) {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  yield {
+    title: "Super awesome data, but a bit slower",
+  };
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  yield {
+    title: "Super awesome data, but a bit slower",
+    subTitle: inputProps.page,
+  };
 };

@@ -147,7 +147,7 @@ describe("The server", () => {
         });
     });
 
-    it("should ignore redirect if it does not config", async () => {
+    it("should ignore redirect if it does not return a config", async () => {
       const { app, logger } = createMiddlewareWithComponent(() => (
         <>
           <TestingViewChunk
@@ -165,6 +165,34 @@ describe("The server", () => {
         .expect((res) => {
           expect(logger.error).not.toHaveBeenCalled();
           expect(res.text).toContain("</html>");
+        });
+    });
+  });
+
+  describe("partial data fetching", () => {
+    it("should allow generator functions", async () => {
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <TestingViewChunk
+          start={5}
+          loader={() => ({
+            View: ({ value }: { value: number }) => <div>{value}</div>,
+            generateViewState: async function* ({ start }: { start: number }) {
+              yield { value: start + 1 };
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              yield { value: start + 2 };
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              yield { value: start + 3 };
+            },
+          })}
+        />
+      ));
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain("<div>8</div>");
         });
     });
   });
@@ -239,7 +267,10 @@ describe("The server", () => {
       await request(app)
         .get("/")
         .expect(200)
-        .expect("Link", /<chunkname\-1\.tsx\.1234\.js>; rel=prefetch; as=script/)
+        .expect(
+          "Link",
+          /<chunkname\-1\.tsx\.1234\.js>; rel=prefetch; as=script/
+        )
         .expect(() => {
           expect(logger.error).not.toHaveBeenCalled();
         });

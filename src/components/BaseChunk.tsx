@@ -1,4 +1,5 @@
-import React from "react";
+import React, { memo } from "react";
+import shallowEqual from "shallowequal";
 import ServerBaseChunk from "./ServerBaseChunk";
 import ClientBaseChunk from "./ClientBaseChunk";
 import { BaseProps } from "./types";
@@ -35,4 +36,8 @@ const throwNameNotDefined = () => {
   );
 };
 
-export default BaseChunk;
+export default memo(
+  BaseChunk,
+  ({ loader: loaderPrev, ...prev }, { loader, ...next }) =>
+    shallowEqual(prev, next)
+);

@@ -5,6 +5,8 @@ import { useViewStateCacheMap } from "../context/ViewStateCache";
 import { useStaticChunkModuleMap } from "../context/StaticChunkModuleCacheContext";
 import { isSyncValue } from "../utils/isSyncValue";
 import { useIsVirtualEnvironment } from "../context/VirtualEnvironmentContext";
+import { isGeneratorValue } from "../utils/isGeneratorValue";
+import { fireAsAct } from "../utils/testing";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -85,37 +87,73 @@ const useViewState = ({
 }) => {
   const viewStateCache = useViewStateCacheMap();
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
-  const [syncViewState, setSyncViewState] = useState(
-    viewStateCache.get(chunkCacheKey)
+  const [data, setSyncViewState] = useState(
+    viewStateCache.has(chunkCacheKey)
+      ? {
+          viewState: viewStateCache.get(chunkCacheKey),
+          isFinal: true,
+        }
+      : undefined
   );
+  const shouldFetchData = isReady && (!data || !data.isFinal);
 
   useEffect(() => {
     let canceled = false;
-    if (!syncViewState && isReady) {
-      if (!generateViewState) {
-        setSyncViewState({});
+    if (!shouldFetchData) {
+      return () => {
+        canceled = true;
+      };
+    }
+
+    // does not have data fetching function
+    if (!generateViewState) {
+      setSyncViewState({
+        viewState: {},
+        isFinal: true,
+      });
+      return () => {
+        canceled = true;
+      };
+    }
+
+    const saveValue = ({
+      viewState,
+      isFinal,
+    }: {
+      viewState: {};
+      isFinal: boolean;
+    }) => {
+      const nextState = viewState || {};
+      if (isFinal) {
+        viewStateCache.set(chunkCacheKey, nextState);
+      }
+      if (!canceled) {
+        setSyncViewState({
+          viewState: nextState,
+          isFinal,
+        });
+      }
+    };
+
+    Promise.resolve(generateViewState(delegateProps)).then(async (result) => {
+      if (!isGeneratorValue(result)) {
+        saveValue({ viewState: result, isFinal: true });
         return;
       }
-      Promise.resolve(generateViewState(delegateProps)).then((result) => {
-        if (!canceled) {
-          const nextState = result || {};
-          setSyncViewState(nextState);
-          viewStateCache.set(chunkCacheKey, nextState);
-        }
-      });
-    }
+      let finalValue = {};
+      for await (const value of result) {
+        fireAsAct(() => saveValue({ viewState: value, isFinal: false }));
+        finalValue = value;
+      }
+      fireAsAct(() => saveValue({ viewState: finalValue, isFinal: true }));
+    });
+
     return () => {
       canceled = true;
     };
-  }, [
-    chunkCacheKey,
-    delegateProps,
-    generateViewState,
-    syncViewState,
-    setSyncViewState,
-  ]);
+  }, [chunkCacheKey, generateViewState, shouldFetchData]);
 
-  return syncViewState ?? useViewState.LOADING;
+  return data?.viewState ?? useViewState.LOADING;
 };
 useViewState.LOADING = Symbol("useViewState.LOADING");
 
