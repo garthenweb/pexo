@@ -7,6 +7,7 @@ import { isSyncValue } from "../utils/isSyncValue";
 import { useIsVirtualEnvironment } from "../context/VirtualEnvironmentContext";
 import { isGeneratorValue } from "../utils/isGeneratorValue";
 import { fireAsAct } from "../utils/testing";
+import Redirect from "./Redirect";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -32,6 +33,13 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
 
   if (typeof chunkModule === "symbol") {
     return null;
+  }
+
+  if (redirect) {
+    if (viewState === useViewState.LOADING) {
+      return null;
+    }
+    return <Redirect {...(viewState as any)} />;
   }
 
   if (viewState === useViewState.LOADING) {

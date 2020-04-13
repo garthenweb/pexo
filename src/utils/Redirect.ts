@@ -1,11 +1,26 @@
 type Pathname = string;
-type Status = 301 | 302;
+export type RedirectStatusCode =
+  | 300
+  | 301
+  | 302
+  | 303
+  | 304
+  | 305
+  | 306
+  | 307
+  | 308;
 
 export class Redirect {
   pathname: Pathname;
-  status: Status;
-  constructor({ pathname, status }: { pathname: Pathname; status: Status }) {
+  status: RedirectStatusCode;
+  constructor({
+    pathname,
+    status,
+  }: {
+    pathname: Pathname;
+    status?: RedirectStatusCode;
+  }) {
     this.pathname = pathname;
-    this.status = status;
+    this.status = status || 301;
   }
 }

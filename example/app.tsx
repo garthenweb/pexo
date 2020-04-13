@@ -11,6 +11,7 @@ const App: FC = () => {
       <Route path="/" component={Homepage} />
       <Route path="/page1" component={Page1} />
       <Route path="/page2" component={Page2} />
+      <Route path="/redirect" component={Page2} />
     </>
   );
 };
