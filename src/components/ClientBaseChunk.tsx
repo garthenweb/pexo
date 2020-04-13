@@ -4,6 +4,7 @@ import { ChunkModule, Loader, BaseProps } from "./types";
 import { useViewStateCacheMap } from "../context/ViewStateCache";
 import { useStaticChunkModuleMap } from "../context/StaticChunkModuleCacheContext";
 import { isSyncValue } from "../utils/isSyncValue";
+import { useIsVirtualEnvironment } from "../context/VirtualEnvironmentContext";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -12,6 +13,7 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
   const chunkModule = useChunkModule({ name, loader });
+  const isVirtualEnvironment = useIsVirtualEnvironment();
   const viewState = useViewState({
     name,
     delegateProps,
@@ -21,6 +23,10 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
         : undefined,
     isReady: chunkModule !== useChunkModule.LOADING,
   });
+
+  if (isVirtualEnvironment) {
+    return null;
+  }
 
   if (typeof chunkModule === "symbol") {
     return null;
@@ -61,12 +67,7 @@ const useChunkModule = ({
     return () => {
       canceled = true;
     };
-  }, [
-    loader,
-    name,
-    syncChunkModule,
-    setSyncChunkModule,
-  ]);
+  }, [loader, name, syncChunkModule, setSyncChunkModule]);
   return syncChunkModule ?? useChunkModule.LOADING;
 };
 useChunkModule.LOADING = Symbol("useChunkModule.LOADING");

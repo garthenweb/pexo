@@ -5,6 +5,7 @@ import { createLocation } from "history";
 import { useClientRouterContext } from "../context/ClientRouterContext";
 import { useIdleCallback } from "../utils/useIdleCallback";
 import { useSharedGlobalClientProvider } from "../context/GlobalContext";
+import { VirtualEnvironmentProvider } from "../context/VirtualEnvironmentContext";
 
 const Route: FC<{
   path: string;
@@ -32,9 +33,11 @@ const usePreFetch = (
       let fragment = document.createDocumentFragment();
       const nextLocation = createLocation(path);
       ReactDOM.render(
-        <SharedGlobalClientProvider>
-          <Component location={nextLocation} />
-        </SharedGlobalClientProvider>,
+        <VirtualEnvironmentProvider>
+          <SharedGlobalClientProvider>
+            <Component location={nextLocation} />
+          </SharedGlobalClientProvider>
+        </VirtualEnvironmentProvider>,
         fragment
       );
       return () => {
