@@ -4,7 +4,7 @@ import { useClientRouterContext } from "../context/ClientRouterContext";
 
 const Link: FC<
   React.PropsWithoutRef<{ to: string; disablePreFetching?: boolean }> &
-    React.RefAttributes<HTMLAnchorElement>
+    React.HTMLAttributes<HTMLAnchorElement>
 > = ({ to, onMouseEnter, onMouseLeave, disablePreFetching, ...props }) => {
   const { updatePreloadUrl } = useClientRouterContext();
 
