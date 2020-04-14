@@ -6,6 +6,7 @@ import { ChunkTemplate } from "./renderStaticChunkTemplate";
 import { requestDataForChunks } from "../loader/requestDataForChunks";
 import { executePromiseQueue } from "../utils/executePromiseQueue";
 import { Plugin } from "../plugins";
+import { READY_EVENT } from "../runtime/snippets";
 
 interface Config {
   orderedChunks: ChunkTemplate[];
@@ -50,9 +51,7 @@ export const renderToChunkStream = ({
       );
     }
   ).finally(() => {
-    stream.write(
-      `<script data-px-runtime>window.__px = window.__px || []; window.__px.push('start')</script>`
-    );
+    stream.write(READY_EVENT);
     stream.end();
   });
 

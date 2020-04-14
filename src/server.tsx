@@ -16,6 +16,7 @@ import {
 import { getManifestAssetsByChunks } from "./utils/getManifestAssetsByChunks";
 import { getHydrationChunkScript } from "./utils/getHydrationChunkScript";
 import { Plugin } from "./plugins";
+import { READY_EVENT } from "./runtime/snippets";
 
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
@@ -35,6 +36,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
   } = config;
   return async (req: express.Request, res: express.Response) => {
     logger.info(`Receive request with url \`${req.url}\``);
+    const disableServerSideRendering = req.query.ssr === "0";
     const watchManifest = requestManifest({
       shouldWatch: process.env.NODE_ENV !== "production",
     });
@@ -51,17 +53,19 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       });
       orderedChunks = enhanceChunksWithViewStateCache(
         requestViewStateCache,
-        orderedChunks,
+        orderedChunks
       );
-      try {
-        orderedChunks = await preloadBlockingChunks(orderedChunks);
-      } catch (throwable) {
-        if (throwable instanceof Redirect) {
-          res.redirect(throwable.status, throwable.pathname);
-          res.end();
-          return;
+      if (!disableServerSideRendering) {
+        try {
+          orderedChunks = await preloadBlockingChunks(orderedChunks);
+        } catch (throwable) {
+          if (throwable instanceof Redirect) {
+            res.redirect(throwable.status, throwable.pathname);
+            res.end();
+            return;
+          }
+          logger.error(throwable);
         }
-        logger.error(throwable);
       }
       const manifest = await watchManifest;
       if (!manifest) {
@@ -85,10 +89,18 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         )
       );
 
+      if (disableServerSideRendering) {
+        res.write(READY_EVENT);
+        res.write(htmlEnd);
+        res.end();
+        logger.info(`End response for request with url \`${req.url}\``);
+        return;
+      }
+
       const stream = renderToChunkStream({
         orderedChunks,
         createAppContext,
-        plugins
+        plugins,
       });
       stream.pipe(res, { end: false });
       stream.on("end", () => {
