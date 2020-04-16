@@ -2,6 +2,8 @@ import { ComponentType, FC, ReactNode } from "react";
 
 export interface ChunkModule<InputProps, ViewState> {
   View: ComponentType<ViewState>;
+  Loading?: ComponentType<{}>;
+  Error?: ComponentType<{ error: unknown }>;
   generateViewState?: (props: InputProps) => Promise<ViewState> | ViewState;
 }
 

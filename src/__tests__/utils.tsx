@@ -79,3 +79,20 @@ export const createRendererWithComponent = (
       logger,
     });
   });
+
+export const wait = (time: number) =>
+  new Promise((resolve) => setTimeout(resolve, time));
+
+export const awaiter = () => {
+  let resolve = (value?: unknown) => {};
+  let reject = (value?: unknown) => {};
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return {
+    resolve,
+    reject,
+    promise,
+  };
+};

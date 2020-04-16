@@ -9,6 +9,7 @@ import { isGeneratorValue } from "../utils/isGeneratorValue";
 import { fireAsAct } from "../utils/testing";
 import Redirect from "./Redirect";
 import { HeadConsumer } from "../context/ClientHeadContext";
+import { ensureAsync } from "../utils/ensureAsync";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -19,7 +20,7 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
 }: InputProps & BaseProps<InputProps, ViewState>) => {
   const chunkModule = useChunkModule({ name, loader });
   const isVirtualEnvironment = useIsVirtualEnvironment();
-  const viewState = useViewState({
+  const { status, data } = useViewState({
     name,
     delegateProps,
     generateViewState:
@@ -36,26 +37,35 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   if (typeof chunkModule === "symbol") {
     return null;
   }
-
   if (redirect) {
-    if (viewState === useViewState.LOADING) {
+    if (status === useViewState.LOADING) {
       return null;
     }
-    return <Redirect {...(viewState as any)} />;
+    return <Redirect {...(data as any)} />;
   }
 
   if (head) {
-    if (viewState === useViewState.LOADING) {
+    if (status === useViewState.LOADING) {
       return null;
     }
-    return <HeadConsumer {...(viewState as any)} />;
+    return <HeadConsumer {...(data as any)} />;
   }
 
-  if (viewState === useViewState.LOADING) {
+  if (status === useViewState.LOADING) {
+    if (chunkModule.Loading) {
+      return <chunkModule.Loading />;
+    }
     return null;
   }
 
-  return <chunkModule.View {...viewState} />;
+  if (status === useViewState.ERROR) {
+    if (chunkModule.Error) {
+      return <chunkModule.Error error={data} />;
+    }
+    return null;
+  }
+
+  return <chunkModule.View {...data} />;
 };
 
 const useChunkModule = ({
@@ -76,7 +86,7 @@ const useChunkModule = ({
   useEffect(() => {
     let canceled = false;
     if (!syncChunkModule) {
-      Promise.resolve(chunkModuleFromLoader).then((result) => {
+      ensureAsync(chunkModuleFromLoader).then((result) => {
         if (!canceled) {
           setSyncChunkModule(result);
           staticChunkModuleCache.set(name, result);
@@ -104,13 +114,25 @@ const useViewState = ({
 }) => {
   const viewStateCache = useViewStateCacheMap();
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
-  const [data, setSyncViewState] = useState(
+  const [data, setSyncViewState] = useState<{
+    viewState: undefined | {};
+    isFinal: boolean;
+    isFailure: boolean;
+    error: unknown;
+  }>(
     viewStateCache.has(chunkCacheKey)
       ? {
           viewState: viewStateCache.get(chunkCacheKey),
           isFinal: true,
+          isFailure: false,
+          error: undefined,
         }
-      : undefined
+      : {
+          viewState: undefined,
+          isFinal: false,
+          isFailure: false,
+          error: undefined,
+        }
   );
   const shouldFetchData = isReady && (!data || !data.isFinal);
 
@@ -127,6 +149,8 @@ const useViewState = ({
       setSyncViewState({
         viewState: {},
         isFinal: true,
+        isFailure: false,
+        error: undefined,
       });
       return () => {
         canceled = true;
@@ -148,30 +172,51 @@ const useViewState = ({
         setSyncViewState({
           viewState: nextState,
           isFinal,
+          isFailure: false,
+          error: undefined,
         });
       }
     };
 
-    Promise.resolve(generateViewState(delegateProps)).then(async (result) => {
-      if (!isGeneratorValue(result)) {
-        saveValue({ viewState: result, isFinal: true });
-        return;
-      }
-      let finalValue = {};
-      for await (const value of result) {
-        fireAsAct(() => saveValue({ viewState: value, isFinal: false }));
-        finalValue = value;
-      }
-      fireAsAct(() => saveValue({ viewState: finalValue, isFinal: true }));
-    });
+    ensureAsync(generateViewState(delegateProps))
+      .then(async (result) => {
+        if (!isGeneratorValue(result)) {
+          saveValue({ viewState: result, isFinal: true });
+          return;
+        }
+        let finalValue = {};
+        for await (const value of result) {
+          fireAsAct(() => saveValue({ viewState: value, isFinal: false }));
+          finalValue = value;
+        }
+        fireAsAct(() => saveValue({ viewState: finalValue, isFinal: true }));
+      })
+      .catch((error) => {
+        if (!canceled) {
+          setSyncViewState({
+            viewState: undefined,
+            error,
+            isFailure: true,
+            isFinal: true,
+          });
+        }
+      });
 
     return () => {
       canceled = true;
     };
   }, [chunkCacheKey, generateViewState, shouldFetchData]);
 
-  return data?.viewState ?? useViewState.LOADING;
+  if (data?.isFailure) {
+    return { status: useViewState.ERROR, data: data.error };
+  }
+  if (data?.viewState) {
+    return { status: useViewState.DONE, data: data.viewState };
+  }
+  return { status: useViewState.LOADING, data: null };
 };
+useViewState.DONE = Symbol("useViewState.DONE");
 useViewState.LOADING = Symbol("useViewState.LOADING");
+useViewState.ERROR = Symbol("useViewState.ERROR");
 
 export default ClientBaseChunk;

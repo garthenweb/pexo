@@ -1,7 +1,7 @@
 import React from "react";
 import request from "supertest";
 import { TestingViewChunk } from "../components";
-import { createMiddlewareWithComponent } from "./utils";
+import { createMiddlewareWithComponent, wait } from "./utils";
 import BaseChunk from "../components/BaseChunk";
 
 describe("The server", () => {
@@ -178,9 +178,9 @@ describe("The server", () => {
             View: ({ value }: { value: number }) => <div>{value}</div>,
             generateViewState: async function* ({ start }: { start: number }) {
               yield { value: start + 1 };
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await wait(100);
               yield { value: start + 2 };
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await wait(100);
               yield { value: start + 3 };
             },
           })}
