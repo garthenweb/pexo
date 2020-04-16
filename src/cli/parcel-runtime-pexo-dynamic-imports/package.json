@@ -1,13 +1,13 @@
 {
-  "name": "babel-poxi-transform",
+  "name": "parcel-runtime-pexo-dynamic-imports",
   "version": "1.0.0",
-  "description": "Babel transform to enhance chunks with additional data",
+  "description": "Dynamic import runtime for PeXo",
   "main": "index.js",
   "engines": {
     "parcel": "^2.0.0-nightly.196"
   },
   "dependencies": {
-    "@parcel/plugin": "^2.0.0-nightly.208"
+    "@parcel/plugin": "^2.0.0-nightly.212"
   },
   "author": "Jannick Garthen",
   "license": "MIT"

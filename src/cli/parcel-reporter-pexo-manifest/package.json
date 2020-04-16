@@ -1,7 +1,7 @@
 {
-  "name": "parcel-reporter-poxi-manifest",
+  "name": "parcel-reporter-pexo-manifest",
   "version": "1.0.0",
-  "description": "Manifest builder for PoXi",
+  "description": "Manifest builder for PeXo",
   "main": "index.js",
   "engines": {
     "parcel": "^2.0.0-nightly.196"

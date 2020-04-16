@@ -24,7 +24,7 @@ program
     const fullServerEntry = path.join(process.cwd(), serverEntry);
     const fullClientEntry = path.join(process.cwd(), clientEntry);
     console.log("");
-    console.log("[PoXi] BUILD APPLICATION");
+    console.log("[PeXo] BUILD APPLICATION");
     console.log("");
     const parcelServerProcess = spawnServerBuildDev(fullServerEntry);
     const parcelClientProcess = spawnClientWatch(fullClientEntry);
@@ -33,7 +33,7 @@ program
     });
     parcelServerProcess.on("exit", () => {
       console.log("");
-      console.log("[PoXi] START SERVER");
+      console.log("[PeXo] START SERVER");
       console.log("");
       const serverProcess = spawnServerRun();
       serverProcess.on("exit", () => {
@@ -62,7 +62,7 @@ const spawnClientWatch = (entry: string) => {
     {
       shell: true,
       stdio: ["pipe", "inherit", "inherit"],
-      env: Object.assign({ POXI_CONTEXT: "client" }, process.env),
+      env: Object.assign({ PEXO_CONTEXT: "client" }, process.env),
     }
   );
   return childProcess;
@@ -86,7 +86,7 @@ const spawnServerBuildDev = (entry: string) => {
     {
       shell: true,
       stdio: ["pipe", "inherit", "inherit"],
-      env: Object.assign({ POXI_CONTEXT: "server" }, process.env),
+      env: Object.assign({ PEXO_CONTEXT: "server" }, process.env),
     }
   );
   return childProcess;

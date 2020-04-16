@@ -7,7 +7,7 @@
       "@parcel/runtime-js",
       "@parcel/runtime-browser-hmr",
       "@parcel/runtime-react-refresh",
-      "parcel-runtime-poxi-dynamic-imports"
+      "parcel-runtime-pexo-dynamic-imports"
     ],
     "service-worker": [
       "@parcel/runtime-js"
@@ -23,6 +23,6 @@
     "@parcel/reporter-cli",
     "@parcel/reporter-dev-server",
     "@parcel/reporter-bundle-analyzer",
-    "parcel-reporter-poxi-manifest"
+    "parcel-reporter-pexo-manifest"
   ]
 }

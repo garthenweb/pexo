@@ -354,7 +354,7 @@ describe("The server", () => {
                 Promise.resolve({
                   title: "my page title",
                   base: {
-                    href: "https://poxi.tralala",
+                    href: "https://pexo.tralala",
                   },
                 }),
             })}
@@ -367,7 +367,7 @@ describe("The server", () => {
                   title: "my page title2",
                   link: [
                     {
-                      href: "https://poxi.tralala/test.css",
+                      href: "https://pexo.tralala/test.css",
                       rel: "stylesheet",
                     },
                   ],
@@ -386,10 +386,10 @@ describe("The server", () => {
             "<title data-px-head-tag>my page title2</title>"
           );
           expect(res.text).toContain(
-            '<base data-px-head-tag href="https://poxi.tralala" />'
+            '<base data-px-head-tag href="https://pexo.tralala" />'
           );
           expect(res.text).toContain(
-            '<link data-px-head-tag href="https://poxi.tralala/test.css" rel="stylesheet" />'
+            '<link data-px-head-tag href="https://pexo.tralala/test.css" rel="stylesheet" />'
           );
         });
     });

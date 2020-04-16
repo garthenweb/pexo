@@ -32,7 +32,7 @@ module.exports = function (api, options) {
           );
           element.attributes.push(idAttr);
 
-          if (process.env.POXI_CONTEXT === "server") {
+          if (process.env.PEXO_CONTEXT === "server") {
             // inspired by https://github.com/airbnb/babel-plugin-dynamic-import-node/blob/master/src/utils.js
             const requireCall = t.callExpression(t.identifier("require"), [
               importPath,

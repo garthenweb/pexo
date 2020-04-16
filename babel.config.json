@@ -7,7 +7,7 @@
         "pragmaFrag": "React.Fragment"
       }
     ],
-    "./src/cli/babel-poxi-transform"
+    "./src/cli/babel-pexo-transform"
   ],
   "presets": [
     [

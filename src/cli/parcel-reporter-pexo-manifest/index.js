@@ -12,7 +12,7 @@ exports.default = new Reporter({
   async report({ event, options }) {
     if (
       event.type !== "buildSuccess" ||
-      process.env.POXI_CONTEXT !== "client"
+      process.env.PEXO_CONTEXT !== "client"
     ) {
       return;
     }
