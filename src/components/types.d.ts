@@ -17,4 +17,5 @@ type BaseProps<InputProps, ViewState> = {
   name: string;
   loader: Loader<InputProps, ViewState>;
   redirect?: boolean;
+  head?: boolean;
 };

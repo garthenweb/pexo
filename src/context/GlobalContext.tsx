@@ -7,6 +7,7 @@ import {
   useStaticChunkModuleMap,
 } from "./StaticChunkModuleCacheContext";
 import { ClientRouterProvider } from "./ClientRouterContext";
+import { HeadContextProvider } from "./ClientHeadContext";
 
 export const PxGlobalServerProvider: FC = (props) => <>{props.children}</>;
 
@@ -19,7 +20,9 @@ interface ClientProps {
 export const PxGlobalClientProvider: FC<ClientProps> = (props) => (
   <ViewStateCacheProvider cache={props.viewStateCache}>
     <StaticChunkModuleProvider cache={props.staticChunkModuleCache}>
-      <ClientRouterProvider>{props.children}</ClientRouterProvider>
+      <ClientRouterProvider>
+        <HeadContextProvider>{props.children}</HeadContextProvider>
+      </ClientRouterProvider>
     </StaticChunkModuleProvider>
   </ViewStateCacheProvider>
 );

@@ -1,9 +1,14 @@
 import React, { FC } from "react";
-import { Chunk } from "../../src/components";
+import { Chunk, HeadChunk } from "../../src/components";
 
 const Page1: FC = () => {
   return (
     <>
+      <HeadChunk
+        title="page1"
+        icon="🐈"
+        loader={() => import("../chunks/head")}
+      />
       <Chunk page="page1" loader={() => import("../chunks/chunk1")} />
       <Chunk page="page1" loader={() => import("../chunks/chunk2")} />
     </>

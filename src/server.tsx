@@ -17,6 +17,7 @@ import { getManifestAssetsByChunks } from "./utils/getManifestAssetsByChunks";
 import { getHydrationChunkScript } from "./utils/getHydrationChunkScript";
 import { Plugin } from "./plugins";
 import { READY_EVENT } from "./runtime/snippets";
+import { renderHeadToString } from "./renderer/renderHead";
 
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
@@ -55,9 +56,10 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         requestViewStateCache,
         orderedChunks
       );
+      let headConfig = {};
       if (!disableServerSideRendering) {
         try {
-          orderedChunks = await preloadBlockingChunks(orderedChunks);
+          ({ headConfig } = await preloadBlockingChunks(orderedChunks));
         } catch (throwable) {
           if (throwable instanceof Redirect) {
             res.redirect(throwable.status, throwable.pathname);
@@ -82,7 +84,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       );
       res.write(
         htmlStart(
-          `${hydrationChunkScript}${[
+          `${renderHeadToString(headConfig)}${hydrationChunkScript}${[
             ...assets.css.tags,
             ...assets.js.tags,
           ].join("")}`
@@ -114,15 +116,16 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
   };
 };
 
-const htmlStart = (header: string) => `
-  <!doctype html>
-  <html>
-    <head>
-      ${header}
-    </head>
-    <body>
-      <main>`;
-const htmlEnd = `</main>
-    </body>
-  </html>
-`;
+const htmlStart = (header: string) =>
+  `
+<!doctype html>
+<html>
+  <head><meta charset="UTF-8">${header}</head>
+  <body>
+    <main>
+`.trim();
+const htmlEnd = `
+    </main>
+  </body>
+</html>
+`.trim();

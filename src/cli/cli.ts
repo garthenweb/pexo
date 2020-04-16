@@ -49,6 +49,8 @@ const spawnClientWatch = (entry: string) => {
       "watch",
       "--dist-dir",
       path.join(distDir, "public"),
+      "--public-url",
+      "/public",
       "--target",
       "client",
       "--watch-for-stdin",

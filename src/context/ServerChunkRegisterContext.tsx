@@ -10,6 +10,7 @@ export interface RegistryItem<InputProps, ViewState>
   chunkCacheKey: string;
   chunkName: string;
   isRedirect: boolean;
+  isHead: boolean;
   props: InputProps;
 }
 

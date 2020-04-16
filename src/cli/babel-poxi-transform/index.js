@@ -1,5 +1,5 @@
 const path = require("path");
-const ALLOWED_REACT_COMPONENTS = ["Chunk", "RedirectChunk"];
+const ALLOWED_REACT_COMPONENTS = ["Chunk", "RedirectChunk", "HeadChunk"];
 
 // https://regex101.com/r/AM0c3m/1
 const REGEX_REMOVE_EXTENSION = /(?:(?:\/index)|(?:\/index)?\.(?:\w|\d)+)$/;

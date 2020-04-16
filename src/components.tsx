@@ -26,3 +26,13 @@ export const RedirectChunk = <
   // name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
   return <BaseChunk name="" {...props} redirect />;
 };
+
+export const HeadChunk = <
+  InputProps extends {},
+  ViewState = RedirectChunkViewProps
+>(
+  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">
+) => {
+  // name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
+  return <BaseChunk name="" {...props} head />;
+};

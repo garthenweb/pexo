@@ -8,11 +8,13 @@ import { useIsVirtualEnvironment } from "../context/VirtualEnvironmentContext";
 import { isGeneratorValue } from "../utils/isGeneratorValue";
 import { fireAsAct } from "../utils/testing";
 import Redirect from "./Redirect";
+import { HeadConsumer } from "../context/ClientHeadContext";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
   loader,
   redirect,
+  head,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
   const chunkModule = useChunkModule({ name, loader });
@@ -40,6 +42,10 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
       return null;
     }
     return <Redirect {...(viewState as any)} />;
+  }
+
+  if (head) {
+    return <HeadConsumer {...(viewState as any)} />;
   }
 
   if (viewState === useViewState.LOADING) {

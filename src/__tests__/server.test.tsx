@@ -276,4 +276,122 @@ describe("The server", () => {
         });
     });
   });
+
+  describe("head chunk", () => {
+    it("should allow to pass title into the head", async () => {
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            head
+            loader={() => ({
+              generateViewState: () =>
+                Promise.resolve({
+                  title: "my page title",
+                }),
+            })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          const title = "<title data-px-head-tag>my page title</title>";
+          expect(res.text).toContain(title);
+          expect(res.text.indexOf(title)).toBeGreaterThan(
+            res.text.indexOf("<head>")
+          );
+          expect(res.text.indexOf(title)).toBeLessThan(
+            res.text.indexOf("</head>")
+          );
+        });
+    });
+
+    it("should prefer the properties from the last chunk", async () => {
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            head
+            loader={() => ({
+              generateViewState: () =>
+                Promise.resolve({
+                  title: "my page title",
+                }),
+            })}
+          />
+          <TestingViewChunk
+            head
+            loader={() => ({
+              generateViewState: () =>
+                Promise.resolve({
+                  title: "my page title2",
+                }),
+            })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain(
+            "<title data-px-head-tag>my page title2</title>"
+          );
+        });
+    });
+
+    it("should shallow merge properties from different chunks", async () => {
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            head
+            loader={() => ({
+              generateViewState: () =>
+                Promise.resolve({
+                  title: "my page title",
+                  base: {
+                    href: "https://poxi.tralala",
+                  },
+                }),
+            })}
+          />
+          <TestingViewChunk
+            head
+            loader={() => ({
+              generateViewState: () =>
+                Promise.resolve({
+                  title: "my page title2",
+                  link: [
+                    {
+                      href: "https://poxi.tralala/test.css",
+                      rel: "stylesheet",
+                    },
+                  ],
+                }),
+            })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain(
+            "<title data-px-head-tag>my page title2</title>"
+          );
+          expect(res.text).toContain(
+            '<base data-px-head-tag href="https://poxi.tralala" />'
+          );
+          expect(res.text).toContain(
+            '<link data-px-head-tag href="https://poxi.tralala/test.css" rel="stylesheet" />'
+          );
+        });
+    });
+  });
 });
