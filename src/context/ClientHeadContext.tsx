@@ -27,10 +27,10 @@ export const HeadConsumer = memo((props: HeadChunkProps) => {
 });
 
 export const HeadContextProvider: FC = ({ children }) => {
-  const [data, update] = useState<HeadChunkProps>({});
+  const [data, update] = useState<HeadChunkProps | null>(null);
   return (
     <>
-      <HandleHeadUpdate data={data} />
+      {data && <HandleHeadUpdate data={data} />}
       <Context.Provider value={{ update }}>{children}</Context.Provider>
     </>
   );

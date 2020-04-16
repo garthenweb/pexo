@@ -45,6 +45,9 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   }
 
   if (head) {
+    if (viewState === useViewState.LOADING) {
+      return null;
+    }
     return <HeadConsumer {...(viewState as any)} />;
   }
 
