@@ -1,0 +1,87 @@
+import { generateRequestCacheKey } from "./utils/cacheKey";
+
+type RunTask<T, R> = (input: T) => Promise<R>;
+
+interface Resource<T, R> {
+  input: T;
+  resourceId: string;
+  config: RequestResourceConfig;
+  runTask: RunTask<T, R>;
+}
+
+interface RequestResourceConfig {
+  cacheable?: boolean;
+  ttl?: number;
+}
+
+type ResourceCall<T, R> = (input: T) => Promise<Resource<T, R>>;
+
+export const createRequestResource = <T, R>(
+  runTask: RunTask<T, R>,
+  config: RequestResourceConfig = {}
+): ResourceCall<T, R> => {
+  const resourceId = performance.now().toString();
+  return async (input: T) => ({
+    input,
+    resourceId,
+    config,
+    runTask,
+  });
+};
+
+interface CacheItem<T> {
+  createdAt: number;
+  value: T;
+}
+
+interface AsyncCache {
+  get: (key: string) => Promise<CacheItem<unknown> | undefined>;
+  has: (key: string) => boolean;
+  set: <T = unknown>(key: string, item: CacheItem<T>) => Promise<void>;
+}
+
+const createCache = (): AsyncCache => {
+  const cache = new Map<string, CacheItem<unknown>>();
+  return {
+    get: async (key: string) => cache.get(key),
+    has: (key: string) => cache.has(key),
+    set: async <T = unknown>(key: string, item: CacheItem<T>) => {
+      cache.set(key, item);
+    },
+  };
+};
+
+interface Config {
+  cache?: AsyncCache;
+}
+
+export const createRequest = ({ cache = createCache() }: Config = {}) => {
+  return async <T, R>(resource: Promise<Resource<T, R>>) => {
+    const res = await resource;
+    const cacheKey = res.config.cacheable
+      ? generateRequestCacheKey(res.resourceId, [res.input])
+      : null;
+
+    if (cacheKey && cache.has(cacheKey)) {
+      const item = (await cache.get(cacheKey))!;
+      if (!res.config.ttl) {
+        return item.value;
+      }
+      const expiresAt = item.createdAt + res.config.ttl;
+      if (Date.now() <= expiresAt) {
+        return item.value;
+      }
+    }
+
+    const req = res.runTask(res.input);
+
+    if (cacheKey) {
+      cache.set(cacheKey, {
+        createdAt: Date.now(),
+        value: req,
+      });
+    }
+
+    return req;
+  };
+};
