@@ -18,6 +18,7 @@ import { getHydrationChunkScript } from "./utils/getHydrationChunkScript";
 import { Plugin } from "./plugins";
 import { READY_EVENT } from "./runtime/snippets";
 import { renderHeadToString } from "./renderer/renderHead";
+import { createRequest } from "./request";
 
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
@@ -35,6 +36,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     requestManifest = createDefaultManifestRequester(logger),
     plugins = [],
   } = config;
+  const request = createRequest();
   return async (req: express.Request, res: express.Response) => {
     logger.info(`Receive request with url \`${req.url}\``);
     const disableServerSideRendering = req.query.ssr === "0";
@@ -54,12 +56,15 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       });
       orderedChunks = enhanceChunksWithViewStateCache(
         requestViewStateCache,
-        orderedChunks
+        orderedChunks,
+        { request }
       );
       let headConfig = {};
       if (!disableServerSideRendering) {
         try {
-          ({ headConfig } = await preloadBlockingChunks(orderedChunks));
+          ({ headConfig } = await preloadBlockingChunks(orderedChunks, {
+            request,
+          }));
         } catch (throwable) {
           if (throwable instanceof Redirect) {
             res.redirect(throwable.status, throwable.pathname);
@@ -103,6 +108,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         orderedChunks,
         createAppContext,
         plugins,
+        utils: { request },
       });
       stream.pipe(res, { end: false });
       stream.on("end", () => {

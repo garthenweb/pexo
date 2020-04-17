@@ -1,10 +1,12 @@
 import { ViewStateCache } from "../types/ViewStateCache";
 import { ChunkTemplate } from "../renderer/renderStaticChunkTemplate";
 import { isSyncValue } from "./isSyncValue";
+import { GenerateViewStateUtils } from "../types/GenerateViewStateUtils";
 
 export const enhanceChunksWithViewStateCache = (
   cache: ViewStateCache,
-  chunks: ChunkTemplate[]
+  chunks: ChunkTemplate[],
+  utils: GenerateViewStateUtils
 ) => {
   return chunks.map((chunk) => {
     if (!chunk.generateViewState) {
@@ -17,7 +19,7 @@ export const enhanceChunksWithViewStateCache = (
           return cache.get(chunk.chunkCacheKey);
         }
         if (chunk.generateViewState && chunk.chunkCacheKey) {
-          const viewState = chunk.generateViewState(props);
+          const viewState = chunk.generateViewState(props, utils);
           if (isSyncValue(viewState)) {
             cache.set(chunk.chunkCacheKey, viewState);
             return viewState;

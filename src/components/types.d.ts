@@ -1,10 +1,14 @@
-import { ComponentType, FC, ReactNode } from "react";
+import { ComponentType } from "react";
+import { GenerateViewStateUtils } from "../types/GenerateViewStateUtils";
 
 export interface ChunkModule<InputProps, ViewState> {
   View: ComponentType<ViewState>;
   Loading?: ComponentType<{}>;
   Error?: ComponentType<{ error: unknown }>;
-  generateViewState?: (props: InputProps) => Promise<ViewState> | ViewState;
+  generateViewState?: (
+    props: InputProps,
+    utils: GenerateViewStateUtils
+  ) => Promise<ViewState> | ViewState;
 }
 
 export type MaybeAsyncChunkModule<InputProps, ViewState> =

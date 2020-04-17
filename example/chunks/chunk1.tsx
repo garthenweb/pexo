@@ -1,5 +1,7 @@
 import React, { FC } from "react";
 import styled from "styled-components";
+import { GenerateViewStateUtils } from "../../src/types/GenerateViewStateUtils";
+import { createRequestResource } from "../../src/request";
 
 interface Props {
   title: string;
@@ -25,13 +27,22 @@ interface InputProps {
   page?: string;
 }
 
-export const generateViewState = (inputProps: InputProps): Promise<Props> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        title: "Super awesome data",
-        subTitle: inputProps.page,
-      });
-    }, 400);
-  });
+export const generateViewState = (
+  inputProps: InputProps,
+  { request }: GenerateViewStateUtils
+): Promise<Props> => {
+  return request(getResourceWithSubTitle(inputProps.page));
 };
+
+const getResourceWithSubTitle = createRequestResource(
+  (subTitle?: string) =>
+    new Promise<Props>((resolve) => {
+      setTimeout(() => {
+        resolve({
+          title: "Super awesome data",
+          subTitle,
+        });
+      }, 400);
+    }),
+  { cacheable: true }
+);

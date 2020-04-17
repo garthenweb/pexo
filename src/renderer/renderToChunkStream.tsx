@@ -7,17 +7,20 @@ import { requestDataForChunks } from "../loader/requestDataForChunks";
 import { executePromiseQueue } from "../utils/executePromiseQueue";
 import { Plugin } from "../plugins";
 import { READY_EVENT } from "../runtime/snippets";
+import { GenerateViewStateUtils } from "../types/GenerateViewStateUtils";
 
 interface Config {
   orderedChunks: ChunkTemplate[];
   createAppContext: (node: ReactNode) => JSX.Element;
   plugins: Plugin[];
+  utils: GenerateViewStateUtils;
 }
 
 export const renderToChunkStream = ({
   orderedChunks,
   createAppContext,
   plugins,
+  utils,
 }: Config) => {
   const writable = new Writable();
   const stream = new PassThrough();
@@ -26,7 +29,7 @@ export const renderToChunkStream = ({
   stream.unpipe(writable);
 
   executePromiseQueue(
-    requestDataForChunks(orderedChunks),
+    requestDataForChunks(orderedChunks, utils),
     async (chunk: ChunkTemplate) => {
       const chunkNodes = generateChunkNodes(chunk);
       let chunkStream: NodeJS.ReadableStream;

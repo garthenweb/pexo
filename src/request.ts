@@ -16,11 +16,12 @@ interface RequestResourceConfig {
 
 type ResourceCall<T, R> = (input: T) => Promise<Resource<T, R>>;
 
+let lastResourceId = 0;
 export const createRequestResource = <T, R>(
   runTask: RunTask<T, R>,
   config: RequestResourceConfig = {}
 ): ResourceCall<T, R> => {
-  const resourceId = performance.now().toString();
+  const resourceId = (++lastResourceId).toString();
   return async (input: T) => ({
     input,
     resourceId,
@@ -35,7 +36,7 @@ interface CacheItem<T> {
 }
 
 interface AsyncCache {
-  get: (key: string) => Promise<CacheItem<unknown> | undefined>;
+  get: (key: string) => Promise<CacheItem<any> | undefined>;
   has: (key: string) => boolean;
   set: <T = unknown>(key: string, item: CacheItem<T>) => Promise<void>;
 }
@@ -55,8 +56,14 @@ interface Config {
   cache?: AsyncCache;
 }
 
+export type Request = <T = any, R = any>(
+  resource: Promise<Resource<T, R>>
+) => Promise<R>;
+
 export const createRequest = ({ cache = createCache() }: Config = {}) => {
-  return async <T, R>(resource: Promise<Resource<T, R>>) => {
+  const request: Request = async <T, R>(
+    resource: Promise<Resource<T, R>>
+  ): Promise<R> => {
     const res = await resource;
     const cacheKey = res.config.cacheable
       ? generateRequestCacheKey(res.resourceId, [res.input])
@@ -84,4 +91,5 @@ export const createRequest = ({ cache = createCache() }: Config = {}) => {
 
     return req;
   };
+  return request;
 };

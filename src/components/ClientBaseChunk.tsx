@@ -10,6 +10,7 @@ import { fireAsAct } from "../utils/testing";
 import Redirect from "./Redirect";
 import { HeadConsumer } from "../context/ClientHeadContext";
 import { ensureAsync } from "../utils/ensureAsync";
+import { useRequest } from "../context/ClientRequestContext";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -112,6 +113,7 @@ const useViewState = ({
   name: string;
   isReady: boolean;
 }) => {
+  const request = useRequest();
   const viewStateCache = useViewStateCacheMap();
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
   const [data, setSyncViewState] = useState<{
@@ -178,7 +180,7 @@ const useViewState = ({
       }
     };
 
-    ensureAsync(generateViewState(delegateProps))
+    ensureAsync(generateViewState(delegateProps, { request }))
       .then(async (result) => {
         if (!isGeneratorValue(result)) {
           saveValue({ viewState: result, isFinal: true });
@@ -205,7 +207,7 @@ const useViewState = ({
     return () => {
       canceled = true;
     };
-  }, [chunkCacheKey, generateViewState, shouldFetchData]);
+  }, [chunkCacheKey, generateViewState, shouldFetchData, request]);
 
   if (data?.isFailure) {
     return { status: useViewState.ERROR, data: data.error };
