@@ -14,6 +14,7 @@ interface Config {
   createAppContext: (node: ReactNode) => JSX.Element;
   plugins: Plugin[];
   utils: GenerateViewStateUtils;
+  replaceChunkWith?: (chunk: ChunkTemplate) => false | string;
 }
 
 export const renderToChunkStream = ({
@@ -21,6 +22,7 @@ export const renderToChunkStream = ({
   createAppContext,
   plugins,
   utils,
+  replaceChunkWith,
 }: Config) => {
   const writable = new Writable();
   const stream = new PassThrough();
@@ -31,6 +33,13 @@ export const renderToChunkStream = ({
   executePromiseQueue(
     requestDataForChunks(orderedChunks, utils),
     async (chunk: ChunkTemplate) => {
+      if (replaceChunkWith) {
+        const replace = replaceChunkWith(chunk);
+        if (typeof replace === "string") {
+          stream.write(replace);
+          return Promise.resolve();
+        }
+      }
       const chunkNodes = generateChunkNodes(chunk);
       let chunkStream: NodeJS.ReadableStream;
       if (plugins.includes("styled-components")) {

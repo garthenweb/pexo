@@ -3,6 +3,7 @@ import request from "supertest";
 import { TestingViewChunk } from "../components";
 import { createMiddlewareWithComponent, wait } from "./utils";
 import BaseChunk from "../components/BaseChunk";
+import Route from "../components/Route";
 
 describe("The server", () => {
   it("should serve a simple application on the server", async () => {
@@ -415,6 +416,73 @@ describe("The server", () => {
           expect(res.text).toContain(
             '<link data-px-head-tag href="https://pexo.tralala/test.css" rel="stylesheet" />'
           );
+        });
+    });
+  });
+
+  describe("service worker responses", () => {
+    it("should return route content only for Service-Worker-Navigation-Preload", async () => {
+      const Page = () => {
+        return (
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Content</div> })}
+          />
+        );
+      };
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Header</div> })}
+          />
+          <Route path="/" component={Page} />
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Footer</div> })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .set("Service-Worker-Navigation-Preload", "true")
+        .expect("Content-Type", "text/html")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toMatch(/^<div>Content<\/div>/);
+        });
+    });
+    it("should return template on template url", async () => {
+      const Page = () => {
+        return (
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Content</div> })}
+          />
+        );
+      };
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Header</div> })}
+          />
+          <Route path="/" component={Page} />
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Footer</div> })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .set("Service-Worker-Px-Template", "true")
+        .expect("Content-Type", "text/html")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain("<!doctype html>");
+          expect(res.text).toContain("<div>Header</div>");
+          expect(res.text).toContain("{{content}}");
+          expect(res.text).not.toContain("<div>Content</div>");
+          expect(res.text).toContain("<div>Footer</div>");
         });
     });
   });

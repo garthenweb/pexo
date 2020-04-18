@@ -2,7 +2,10 @@ import React from "react";
 import express from "express";
 import { StaticRouter } from "react-router-dom";
 import { PxGlobalServerProvider } from "./context/GlobalContext";
-import { renderStaticChunkTemplate } from "./renderer/renderStaticChunkTemplate";
+import {
+  renderStaticChunkTemplate,
+  ChunkTemplate,
+} from "./renderer/renderStaticChunkTemplate";
 import { renderToChunkStream } from "./renderer/renderToChunkStream";
 import { preloadBlockingChunks } from "./loader/preloadBlockingChunks";
 import { Redirect } from "./utils/Redirect";
@@ -40,6 +43,9 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
   return async (req: express.Request, res: express.Response) => {
     logger.info(`Receive request with url \`${req.url}\``);
     const disableServerSideRendering = req.query.ssr === "0";
+    const renderAsPartial =
+      req.headers["service-worker-navigation-preload"] === "true";
+    const renderTemplate = req.headers["service-worker-px-template"] === "true";
     const watchManifest = requestManifest({
       shouldWatch: process.env.NODE_ENV !== "production",
     });
@@ -60,7 +66,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         { request }
       );
       let headConfig = {};
-      if (!disableServerSideRendering) {
+      if (!disableServerSideRendering && !renderAsPartial) {
         try {
           ({ headConfig } = await preloadBlockingChunks(orderedChunks, {
             request,
@@ -84,19 +90,28 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       logger.info(`Start writing response for request with url \`${req.url}\``);
       res.setHeader("Content-Type", "text/html");
       res.setHeader(
+        "Vary",
+        [
+          "service-worker-navigation-preload",
+          "service-worker-px-template",
+        ].join(", ")
+      );
+      res.setHeader(
         "Link",
         [...assets.css.links, ...assets.js.links].join(", ")
       );
-      res.write(
-        htmlStart(
-          `${renderHeadToString(headConfig)}${hydrationChunkScript}${[
-            ...assets.css.tags,
-            ...assets.js.tags,
-          ].join("")}`
-        )
-      );
+      if (!renderAsPartial) {
+        res.write(
+          htmlStart(
+            `${renderHeadToString(headConfig)}${hydrationChunkScript}${[
+              ...assets.css.tags,
+              ...assets.js.tags,
+            ].join("")}`
+          )
+        );
+      }
 
-      if (disableServerSideRendering) {
+      if (disableServerSideRendering && !renderAsPartial) {
         res.write(READY_EVENT);
         res.write(htmlEnd);
         res.end();
@@ -108,11 +123,22 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         orderedChunks,
         createAppContext,
         plugins,
+        replaceChunkWith: (chunk) => {
+          if (renderAsPartial && !chunk.isRenderedWithinRoute) {
+            return "";
+          }
+          if (renderTemplate && chunk.isRenderedWithinRoute) {
+            return "{{content}}";
+          }
+          return false;
+        },
         utils: { request },
       });
       stream.pipe(res, { end: false });
       stream.on("end", () => {
-        res.write(htmlEnd);
+        if (!renderAsPartial) {
+          res.write(htmlEnd);
+        }
         res.end();
         logger.info(`End response for request with url \`${req.url}\``);
       });

@@ -6,13 +6,18 @@ import { useClientRouterContext } from "../context/ClientRouterContext";
 import { useIdleCallback } from "../utils/useIdleCallback";
 import { useSharedGlobalClientProvider } from "../context/GlobalContext";
 import { VirtualEnvironmentProvider } from "../context/VirtualEnvironmentContext";
+import { RouteProvider } from "../context/RouteContext";
 
 const Route: FC<{
   path: string;
   component: React.ComponentType<any>;
 }> = (props) => {
   usePreFetch(props.path, props.component);
-  return <ReactRouterRoute exact {...props} />;
+  return (
+    <RouteProvider>
+      <ReactRouterRoute exact {...props} />
+    </RouteProvider>
+  );
 };
 
 const usePreFetch = (
