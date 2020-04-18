@@ -1,7 +1,7 @@
 import React from "react";
-import { render, cleanup, act } from "@testing-library/react";
+import { render, cleanup, act, fireEvent } from "@testing-library/react";
 import ClientBaseChunk from "../ClientBaseChunk";
-import { wait, awaiter } from "../../__tests__/utils";
+import { awaiter } from "../../__tests__/utils";
 
 describe("ClientBaseChunk", () => {
   afterEach(() => {
@@ -112,5 +112,23 @@ describe("ClientBaseChunk", () => {
     expect(await findByText("Reason of the error")).not.toBeNull();
     expect(queryByText("Loading")).toBeNull();
     expect(queryByText("Test")).toBeNull();
+  });
+
+  it("should allow to pass actions into the view", async () => {
+    const fire = jest.fn();
+    const { getByText } = render(
+      <ClientBaseChunk
+        name={String(performance.now())}
+        actions={{ fire }}
+        loader={() => ({
+          View: ({ actions }: { actions: { fire: () => void } }) => (
+            <div onClick={actions.fire}>Test</div>
+          ),
+        })}
+      />
+    );
+
+    fireEvent.click(getByText("Test"));
+    expect(fire).toHaveBeenCalledTimes(1);
   });
 });

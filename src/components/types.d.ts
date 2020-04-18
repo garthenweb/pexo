@@ -1,10 +1,14 @@
 import { ComponentType } from "react";
 import { GenerateViewStateUtils } from "../types/GenerateViewStateUtils";
 
+interface ViewActions {
+  [name: string]: Function;
+}
+
 export interface ChunkModule<InputProps, ViewState> {
-  View: ComponentType<ViewState>;
-  Loading?: ComponentType<{}>;
-  Error?: ComponentType<{ error: unknown }>;
+  View: ComponentType<ViewState & { actions?: ViewActions }>;
+  Loading?: ComponentType<{ actions?: ViewActions }>;
+  Error?: ComponentType<{ error: unknown; actions?: ViewActions }>;
   generateViewState?: (
     props: InputProps,
     utils: GenerateViewStateUtils
@@ -24,4 +28,5 @@ type BaseProps<InputProps, ViewState> = {
   loader: Loader<InputProps, ViewState>;
   redirect?: boolean;
   head?: boolean;
+  actions?: ViewActions;
 };

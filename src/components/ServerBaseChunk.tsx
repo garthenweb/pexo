@@ -9,6 +9,7 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   loader,
   redirect,
   head,
+  actions,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
@@ -25,6 +26,7 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
     chunkName: name,
     isRedirect: Boolean(redirect),
     isHead: Boolean(head),
+    actionKeys: actions ? Object.keys(actions) : [],
     props: delegateProps,
   });
   return (

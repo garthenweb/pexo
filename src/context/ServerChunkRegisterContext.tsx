@@ -11,6 +11,7 @@ export interface RegistryItem<InputProps, ViewState>
   chunkName: string;
   isRedirect: boolean;
   isHead: boolean;
+  actionKeys: string[];
   props: InputProps;
 }
 

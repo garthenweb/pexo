@@ -61,10 +61,22 @@ export const renderToChunkStream = ({
   return stream;
 };
 
+const createServerActions = (keys: string[]) => {
+  const actions = {};
+  keys.forEach((key) => {
+    actions[key] = () =>
+      new Error(
+        "View actions should never be called on the server. This most often happens when the action was accidentally used in the render function and was not wrapped into an effect or an event handler."
+      );
+  });
+  return actions;
+};
+
 const generateChunkNodes = (chunk: ChunkTemplate) => {
   const resolvedViewState = chunk.viewState ?? {};
+  const actions = chunk.actionKeys && createServerActions(chunk.actionKeys);
   const chunkNode = chunk.View ? (
-    <chunk.View key={1} {...resolvedViewState} />
+    <chunk.View key={1} {...resolvedViewState} actions={actions} />
   ) : null;
   const scriptNode = chunk.chunkCacheKey ? (
     <script

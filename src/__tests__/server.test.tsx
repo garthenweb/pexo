@@ -39,6 +39,30 @@ describe("The server", () => {
       });
   });
 
+  it("should serve chunks with view actions", async () => {
+    const { app, logger } = createMiddlewareWithComponent(() => (
+      <>
+        <TestingViewChunk
+          actions={{ myAction: () => {} }}
+          loader={() => ({
+            View: ({ actions }: { actions: { myAction: () => void } }) => (
+              <div onClick={actions.myAction}>Hello World</div>
+            ),
+          })}
+        />
+      </>
+    ));
+
+    await request(app)
+      .get("/")
+      .expect("Content-Type", "text/html")
+      .expect(200)
+      .expect((res) => {
+        expect(logger.error).not.toHaveBeenCalled();
+        expect(res.text).toContain("Hello World");
+      });
+  });
+
   it("should allow data fetching in chunks", async () => {
     const { app, logger } = createMiddlewareWithComponent(() => (
       <>

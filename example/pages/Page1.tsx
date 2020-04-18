@@ -10,7 +10,6 @@ const Page1: FC = () => {
         loader={() => import("../chunks/head")}
       />
       <Chunk page="page1" loader={() => import("../chunks/chunk1")} />
-      <Chunk page="page1" loader={() => import("../chunks/chunk2")} />
     </>
   );
 };

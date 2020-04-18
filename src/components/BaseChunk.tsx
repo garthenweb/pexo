@@ -9,6 +9,7 @@ const BaseChunk = <InputProps extends {}, ViewState extends {}>({
   loader,
   redirect,
   head,
+  actions,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
   if (!process.browser) {
@@ -18,6 +19,7 @@ const BaseChunk = <InputProps extends {}, ViewState extends {}>({
         loader={loader}
         redirect={redirect}
         head={head}
+        actions={actions}
         {...delegateProps}
       />
     );
@@ -28,6 +30,7 @@ const BaseChunk = <InputProps extends {}, ViewState extends {}>({
       loader={loader}
       redirect={redirect}
       head={head}
+      actions={actions}
       {...delegateProps}
     />
   );

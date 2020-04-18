@@ -17,6 +17,7 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   loader,
   redirect,
   head,
+  actions,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
   const chunkModule = useChunkModule({ name, loader });
@@ -54,19 +55,19 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
 
   if (status === useViewState.LOADING) {
     if (chunkModule.Loading) {
-      return <chunkModule.Loading />;
+      return <chunkModule.Loading actions={actions} />;
     }
     return null;
   }
 
   if (status === useViewState.ERROR) {
     if (chunkModule.Error) {
-      return <chunkModule.Error error={data} />;
+      return <chunkModule.Error error={data} actions={actions} />;
     }
     return null;
   }
 
-  return <chunkModule.View {...data} />;
+  return <chunkModule.View {...data} actions={actions} />;
 };
 
 const useChunkModule = ({
