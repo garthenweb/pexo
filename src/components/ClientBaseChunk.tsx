@@ -138,9 +138,10 @@ const useViewState = ({
           error: undefined,
         }
   );
-  const cacheKeyChanged = lastChunkCacheKey.current !== chunkCacheKey;
+  const cacheKeyChanged =
+    lastChunkCacheKey.current && lastChunkCacheKey.current !== chunkCacheKey;
   const shouldFetchData =
-    isReady && (!data || !data.isFinal || cacheKeyChanged);
+    isReady && (!data.viewState || !data.isFinal || cacheKeyChanged);
   lastChunkCacheKey.current = chunkCacheKey;
 
   useEffect(() => {

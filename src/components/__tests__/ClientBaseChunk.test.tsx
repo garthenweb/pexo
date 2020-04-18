@@ -159,4 +159,34 @@ describe("ClientBaseChunk", () => {
     expect(await findByText("2")).not.toBeNull();
     expect(queryByText("1")).toBeNull();
   });
+
+  it("should not regenerate the view state on mount if already cached", async () => {
+    const name = String(performance.now());
+    const generateViewState = jest.fn(() => ({ value: "Chunk" }));
+    const { findByText, rerender } = render(
+      <ClientBaseChunk
+        name={name}
+        loader={() => ({
+          View: ({ value }: { value: string }) => <div>{value}</div>,
+          generateViewState,
+        })}
+      />
+    );
+    expect(await findByText("Chunk")).not.toBeNull();
+
+    rerender(<div>reset</div>);
+    expect(await findByText("reset")).not.toBeNull();
+
+    rerender(
+      <ClientBaseChunk
+        name={name}
+        loader={() => ({
+          View: ({ value }: { value: string }) => <div>{value}</div>,
+          generateViewState,
+        })}
+      />
+    );
+    expect(await findByText("Chunk")).not.toBeNull();
+    expect(generateViewState).toHaveBeenCalledTimes(1);
+  });
 });
