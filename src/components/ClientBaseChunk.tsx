@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { generateChunkCacheKey } from "../utils/cacheKey";
 import { ChunkModule, Loader, BaseProps } from "./types";
 import { useViewStateCacheMap } from "../context/ViewStateCache";
@@ -116,6 +116,7 @@ const useViewState = ({
 }) => {
   const request = useRequest();
   const viewStateCache = useViewStateCacheMap();
+  const lastChunkCacheKey = useRef<string | undefined>();
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
   const [data, setSyncViewState] = useState<{
     viewState: undefined | {};
@@ -137,7 +138,10 @@ const useViewState = ({
           error: undefined,
         }
   );
-  const shouldFetchData = isReady && (!data || !data.isFinal);
+  const cacheKeyChanged = lastChunkCacheKey.current !== chunkCacheKey;
+  const shouldFetchData =
+    isReady && (!data || !data.isFinal || cacheKeyChanged);
+  lastChunkCacheKey.current = chunkCacheKey;
 
   useEffect(() => {
     let canceled = false;

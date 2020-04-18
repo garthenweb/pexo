@@ -131,4 +131,32 @@ describe("ClientBaseChunk", () => {
     fireEvent.click(getByText("Test"));
     expect(fire).toHaveBeenCalledTimes(1);
   });
+
+  it("should update view as soon as input props change", async () => {
+    const name = String(performance.now());
+    const { queryByText, findByText, rerender } = render(
+      <ClientBaseChunk
+        name={name}
+        value={1}
+        loader={() => ({
+          View: ({ value }: { value: number }) => <div>{value}</div>,
+          generateViewState: ({ value }: { value: number }) => ({ value }),
+        })}
+      />
+    );
+
+    expect(await findByText("1")).not.toBeNull();
+    rerender(
+      <ClientBaseChunk
+        name={name}
+        value={2}
+        loader={() => ({
+          View: ({ value }: { value: number }) => <div>{value}</div>,
+          generateViewState: ({ value }: { value: number }) => ({ value }),
+        })}
+      />
+    );
+    expect(await findByText("2")).not.toBeNull();
+    expect(queryByText("1")).toBeNull();
+  });
 });
