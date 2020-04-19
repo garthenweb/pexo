@@ -6,7 +6,6 @@ import { ChunkTemplate } from "./renderStaticChunkTemplate";
 import { requestDataForChunks } from "../loader/requestDataForChunks";
 import { executePromiseQueue } from "../utils/executePromiseQueue";
 import { Plugin } from "../plugins";
-import { READY_EVENT } from "../runtime/snippets";
 import { GenerateViewStateUtils } from "../types/GenerateViewStateUtils";
 
 interface Config {
@@ -14,7 +13,6 @@ interface Config {
   createAppContext: (node: ReactNode) => JSX.Element;
   plugins: Plugin[];
   utils: GenerateViewStateUtils;
-  replaceChunkWith?: (chunk: ChunkTemplate) => false | string;
 }
 
 export const renderToChunkStream = ({
@@ -22,7 +20,6 @@ export const renderToChunkStream = ({
   createAppContext,
   plugins,
   utils,
-  replaceChunkWith,
 }: Config) => {
   const writable = new Writable();
   const stream = new PassThrough();
@@ -33,13 +30,6 @@ export const renderToChunkStream = ({
   executePromiseQueue(
     requestDataForChunks(orderedChunks, utils),
     async (chunk: ChunkTemplate) => {
-      if (replaceChunkWith) {
-        const replace = replaceChunkWith(chunk);
-        if (typeof replace === "string") {
-          stream.write(replace);
-          return Promise.resolve();
-        }
-      }
       const chunkNodes = generateChunkNodes(chunk);
       let chunkStream: NodeJS.ReadableStream;
       if (plugins.includes("styled-components")) {
@@ -63,7 +53,6 @@ export const renderToChunkStream = ({
       );
     }
   ).finally(() => {
-    stream.write(READY_EVENT);
     stream.end();
   });
 

@@ -13,8 +13,16 @@ expressApp.use(
   express.static(path.join(process.cwd(), "dist", "public"), {
     maxAge:
       process.env.NODE_ENV === "production" ? 1000 * 60 * 60 * 24 * 360 : 2500,
+    setHeaders: function (res, filePath) {
+      if (
+        filePath.startsWith(path.join(process.cwd(), "dist", "public", "__"))
+      ) {
+        res.setHeader("service-worker-allowed", "/");
+      }
+    },
   })
 );
+
 if (process.env.NODE_ENV !== "production") {
   expressApp.use(
     "/__parcel_source_root",

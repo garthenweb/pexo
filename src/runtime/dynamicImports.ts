@@ -8,17 +8,18 @@ interface ImportMap {
 export const hydrateRequiredChunks = async (
   importMap: ImportMap = globalThis.__pxChunkMap
 ): Promise<StaticChunkModuleCache> => {
-  const chunkNames = JSON.parse(
-    document.querySelector("[data-px-hydration-chunks]")?.innerHTML || "[]"
-  ) as string[];
+  const scripts = [...document.querySelectorAll("[data-px-hydration-chunks]")];
+  const chunkNames = new Set(
+    scripts.flatMap((s) => JSON.parse(s.innerHTML || "[]") as string[])
+  );
 
-  if (chunkNames.length === 0) {
+  if (chunkNames.size === 0) {
     return new Map();
   }
 
-  const asyncChunks: Promise<
-    readonly [string, ChunkModule<any, any>]
-  >[] = chunkNames
+  const asyncChunks: Promise<readonly [string, ChunkModule<any, any>]>[] = [
+    ...chunkNames,
+  ]
     .filter((name) => importMap[name])
     .map((name) =>
       importMap[name]().then(

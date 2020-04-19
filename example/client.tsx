@@ -1,10 +1,18 @@
 import React from "react";
 import { mount } from "../src/client";
 import App from "./app";
-import { createPluginStyledComponents } from "../src/plugins";
+import {
+  createPluginStyledComponents,
+  createPluginServiceWorker,
+} from "../src/plugins";
 
 mount({
   createApp: () => <App />,
   requestContainer: () => document.querySelector("main")!,
-  plugins: [createPluginStyledComponents()],
+  plugins: [
+    createPluginStyledComponents(),
+    createPluginServiceWorker({
+      disable: process.env.NODE_ENV !== "production",
+    }),
+  ],
 });

@@ -11,6 +11,7 @@ import {
 import { cleanRuntime } from "./runtime/cleanRuntime";
 import { hydrateRequiredChunks } from "./runtime/dynamicImports";
 import { Plugin } from "./plugins";
+import { registerServiceWorker } from "./serviceWorker/registerServiceWorker";
 
 interface MountConfig {
   requestContainer: () => Element;
@@ -29,11 +30,16 @@ export const mount = async (config: MountConfig) => {
     plugins = [],
   } = config;
 
-  const [staticChunkModuleCache, node] = await Promise.all([
+  if (plugins.includes("service-worker")) {
+    registerServiceWorker();
+  }
+  const [, node] = await Promise.all([
     hydrateRequiredChunks(),
     createApp(),
     injectGlobalRuntime().ready,
   ]);
+  // check static chunks one more time as hydration marks could be added later
+  const staticChunkModuleCache = await hydrateRequiredChunks();
 
   const container = requestContainer();
   if (!container) {

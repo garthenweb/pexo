@@ -3,7 +3,6 @@ import { generateChunkCacheKey } from "../utils/cacheKey";
 import { ServerChunkRegisterContext } from "../context/ServerChunkRegisterContext";
 import { BaseProps } from "./types";
 import { isSyncValue } from "../utils/isSyncValue";
-import { useIsRenderedWithinRoute } from "../context/RouteContext";
 
 const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -13,7 +12,6 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   actions,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
-  const isRenderedWithinRoute = useIsRenderedWithinRoute();
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
   const chunkModule = loader();
   if (!isSyncValue(chunkModule)) {
@@ -28,7 +26,6 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
     chunkName: name,
     isRedirect: Boolean(redirect),
     isHead: Boolean(head),
-    isRenderedWithinRoute,
     actionKeys: actions ? Object.keys(actions) : [],
     props: delegateProps,
   });

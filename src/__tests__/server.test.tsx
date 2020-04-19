@@ -4,6 +4,7 @@ import { TestingViewChunk } from "../components";
 import { createMiddlewareWithComponent, wait } from "./utils";
 import BaseChunk from "../components/BaseChunk";
 import Route from "../components/Route";
+import Routes from "../components/Routes";
 
 describe("The server", () => {
   it("should serve a simple application on the server", async () => {
@@ -434,7 +435,9 @@ describe("The server", () => {
           <TestingViewChunk
             loader={() => ({ View: () => <div>Header</div> })}
           />
-          <Route path="/" component={Page} />
+          <Routes>
+            <Route path="/" component={Page} />
+          </Routes>
           <TestingViewChunk
             loader={() => ({ View: () => <div>Footer</div> })}
           />
@@ -449,9 +452,12 @@ describe("The server", () => {
         .expect((res) => {
           expect(logger.error).not.toHaveBeenCalled();
           expect(res.text).toMatch(/^<div>Content<\/div>/);
+          expect(res.text).toContain("data-px-hydration-chunks");
+          expect(res.text).not.toContain("data-px-server-template-routes");
         });
     });
-    it("should return template on template url", async () => {
+
+    it("should return header template", async () => {
       const Page = () => {
         return (
           <TestingViewChunk
@@ -464,7 +470,9 @@ describe("The server", () => {
           <TestingViewChunk
             loader={() => ({ View: () => <div>Header</div> })}
           />
-          <Route path="/" component={Page} />
+          <Routes>
+            <Route path="/" component={Page} />
+          </Routes>
           <TestingViewChunk
             loader={() => ({ View: () => <div>Footer</div> })}
           />
@@ -472,17 +480,54 @@ describe("The server", () => {
       ));
 
       await request(app)
-        .get("/")
-        .set("Service-Worker-Px-Template", "true")
+        .get("/__/px.sw.header")
         .expect("Content-Type", "text/html")
         .expect(200)
         .expect((res) => {
           expect(logger.error).not.toHaveBeenCalled();
           expect(res.text).toContain("<!doctype html>");
           expect(res.text).toContain("<div>Header</div>");
-          expect(res.text).toContain("{{content}}");
+          expect(res.text).not.toContain("<div>Content</div>");
+          expect(res.text).not.toContain("<div>Footer</div>");
+          expect(res.text).not.toContain("</html>");
+          expect(res.text).not.toContain("data-px-server-template-routes");
+        });
+    });
+
+    it("should return footer template", async () => {
+      const Page = () => {
+        return (
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Content</div> })}
+          />
+        );
+      };
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Header</div> })}
+          />
+          <Routes>
+            <Route path="/" component={Page} />
+          </Routes>
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Footer</div> })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/__/px.sw.footer")
+        .expect("Content-Type", "text/html")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).not.toContain("<!doctype html>");
+          expect(res.text).not.toContain("<div>Header</div>");
           expect(res.text).not.toContain("<div>Content</div>");
           expect(res.text).toContain("<div>Footer</div>");
+          expect(res.text).toContain("</html>");
+          expect(res.text).not.toContain("data-px-server-template-routes");
         });
     });
   });

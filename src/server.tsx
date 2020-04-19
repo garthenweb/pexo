@@ -2,10 +2,7 @@ import React from "react";
 import express from "express";
 import { StaticRouter } from "react-router-dom";
 import { PxGlobalServerProvider } from "./context/GlobalContext";
-import {
-  renderStaticChunkTemplate,
-  ChunkTemplate,
-} from "./renderer/renderStaticChunkTemplate";
+import { renderStaticChunkTemplate } from "./renderer/renderStaticChunkTemplate";
 import { renderToChunkStream } from "./renderer/renderToChunkStream";
 import { preloadBlockingChunks } from "./loader/preloadBlockingChunks";
 import { Redirect } from "./utils/Redirect";
@@ -45,7 +42,19 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     const disableServerSideRendering = req.query.ssr === "0";
     const renderAsPartial =
       req.headers["service-worker-navigation-preload"] === "true";
-    const renderTemplate = req.headers["service-worker-px-template"] === "true";
+    if (renderAsPartial) {
+      logger.info(
+        `Detects to render request with url \`${req.url}\` as partial`
+      );
+    }
+    const renderTemplate = (() => {
+      if (req.url === "/__/px.sw.header") {
+        return "header" as const;
+      } else if (req.url === "/__/px.sw.footer") {
+        return "footer" as const;
+      }
+      return undefined;
+    })();
     const watchManifest = requestManifest({
       shouldWatch: process.env.NODE_ENV !== "production",
     });
@@ -59,6 +68,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       let orderedChunks = renderStaticChunkTemplate({
         createApp,
         createAppContext,
+        renderPartial: renderAsPartial ? "routes" : renderTemplate,
       });
       orderedChunks = enhanceChunksWithViewStateCache(
         requestViewStateCache,
@@ -89,18 +99,13 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
 
       logger.info(`Start writing response for request with url \`${req.url}\``);
       res.setHeader("Content-Type", "text/html");
-      res.setHeader(
-        "Vary",
-        [
-          "service-worker-navigation-preload",
-          "service-worker-px-template",
-        ].join(", ")
-      );
+      res.setHeader("Vary", "service-worker-navigation-preload");
       res.setHeader(
         "Link",
         [...assets.css.links, ...assets.js.links].join(", ")
       );
-      if (!renderAsPartial) {
+      const renderHead = !renderAsPartial && renderTemplate !== "footer";
+      if (renderHead) {
         res.write(
           htmlStart(
             `${renderHeadToString(headConfig)}${hydrationChunkScript}${[
@@ -112,8 +117,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       }
 
       if (disableServerSideRendering && !renderAsPartial) {
-        res.write(READY_EVENT);
-        res.write(htmlEnd);
+        res.write(READY_EVENT + htmlEnd);
         res.end();
         logger.info(`End response for request with url \`${req.url}\``);
         return;
@@ -123,21 +127,15 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         orderedChunks,
         createAppContext,
         plugins,
-        replaceChunkWith: (chunk) => {
-          if (renderAsPartial && !chunk.isRenderedWithinRoute) {
-            return "";
-          }
-          if (renderTemplate && chunk.isRenderedWithinRoute) {
-            return "{{content}}";
-          }
-          return false;
-        },
         utils: { request },
       });
       stream.pipe(res, { end: false });
       stream.on("end", () => {
-        if (!renderAsPartial) {
-          res.write(htmlEnd);
+        if (!renderHead) {
+          res.write(hydrationChunkScript);
+        }
+        if (!renderAsPartial && renderTemplate !== "header") {
+          res.write(READY_EVENT + htmlEnd);
         }
         res.end();
         logger.info(`End response for request with url \`${req.url}\``);
