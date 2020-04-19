@@ -21,14 +21,14 @@ exports.default = new Reporter({
 
     const manifest = {};
     for (let bundle of event.bundleGraph.getBundles()) {
-      const mainBundleName = path.relative(
-        projectRoot,
-        bundle.getMainEntry().filePath
-      ).replace(REGEX_REMOVE_EXTENSION, "");
+      const mainBundleName = path
+        .relative(projectRoot, bundle.getMainEntry().filePath)
+        .replace(REGEX_REMOVE_EXTENSION, "");
       manifest[mainBundleName] = manifest[mainBundleName] || {
         js: [],
         css: [],
         isEntry: bundle.isEntry,
+        isWorker: bundle.env.isWorker(),
       };
       if (bundle.type === "js" || bundle.type === "css") {
         manifest[mainBundleName][bundle.type].push(

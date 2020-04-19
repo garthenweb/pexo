@@ -5,6 +5,7 @@ export interface ManifestItem {
   js: string[];
   css: string[];
   isEntry: boolean;
+  isWorker: boolean;
 }
 
 export interface Manifest {

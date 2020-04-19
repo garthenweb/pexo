@@ -19,7 +19,7 @@ export const getManifestAssetsByChunks = (
   };
 
   Object.values(manifest).forEach((bundle) => {
-    if (bundle.isEntry) {
+    if (bundle.isEntry && !bundle.isWorker) {
       bundle.js.forEach((asset) => entryAssets.js.add(asset));
       bundle.css.forEach((asset) => entryAssets.css.add(asset));
     }
