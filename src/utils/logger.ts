@@ -1,8 +1,8 @@
 export const createDefaultLogger = (): Logger => ({
   info: (msg) => console.info(`[${new Date().toISOString()}] [PeXo INFO]`, msg),
-  warn: (msg) => console.info(`[${new Date().toISOString()}] [PeXo WARN]`, msg),
+  warn: (msg) => console.warn(`[${new Date().toISOString()}] [PeXo WARN]`, msg),
   error: (msg) =>
-    console.info(`[${new Date().toISOString()}] [PeXo WARN]`, msg),
+    console.error(`[${new Date().toISOString()}] [PeXo WARN]`, msg),
 });
 
 export interface Logger {
