@@ -1,3 +1,5 @@
+import { INVALIDATE_EVENT } from "../runtime/snippets";
+
 const OFFLINE_CACHE_NAME = "PX_OFFLINE";
 
 addEventListener("install", (event) => {
@@ -52,7 +54,11 @@ addEventListener("fetch", (event) => {
 
         const parts = [
           caches.match("/__/px.sw.header"),
-          networkContent,
+          networkContent.then((res) => {
+            return networkContent.status === 200
+              ? networkContent
+              : new Response(INVALIDATE_EVENT);
+          }),
           caches.match("/__/px.sw.footer"),
         ];
 

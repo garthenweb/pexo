@@ -14,13 +14,16 @@ export const PxGlobalServerProvider: FC = (props) => <>{props.children}</>;
 interface ClientProps {
   viewStateCache: ViewStateCache;
   staticChunkModuleCache: StaticChunkModuleCache;
+  reloadOnNavigation: boolean;
   children: JSX.Element;
 }
 
 export const PxGlobalClientProvider: FC<ClientProps> = (props) => (
   <ViewStateCacheProvider cache={props.viewStateCache}>
     <StaticChunkModuleProvider cache={props.staticChunkModuleCache}>
-      <ClientRouterProvider>
+      <ClientRouterProvider
+        reloadOnNavigation={props.reloadOnNavigation}
+      >
         <HeadContextProvider>{props.children}</HeadContextProvider>
       </ClientRouterProvider>
     </StaticChunkModuleProvider>

@@ -6,7 +6,10 @@ const Link: FC<
   React.PropsWithoutRef<{ to: string; disablePreFetching?: boolean }> &
     React.HTMLAttributes<HTMLAnchorElement>
 > = ({ to, onMouseEnter, onMouseLeave, disablePreFetching, ...props }) => {
-  const { updatePreloadUrl } = useClientRouterContext();
+  const {
+    updatePreloadUrl,
+    reloadOnNavigation,
+  } = useClientRouterContext();
 
   const extendedOnMouseEnter = useCallback(
     (ev) => {
@@ -27,6 +30,10 @@ const Link: FC<
     },
     [onMouseLeave, updatePreloadUrl]
   );
+
+  if (reloadOnNavigation) {
+    return <a href={to} {...props} />;
+  }
 
   return (
     <ReactRouterLink

@@ -12,6 +12,7 @@ import { cleanRuntime } from "./runtime/cleanRuntime";
 import { hydrateRequiredChunks } from "./runtime/dynamicImports";
 import { Plugin } from "./plugins";
 import { registerServiceWorker } from "./serviceWorker/registerServiceWorker";
+import { injectGlobalErrorHandler } from "./utils/injectGlobalErrorHandler";
 
 interface MountConfig {
   requestContainer: () => Element;
@@ -33,7 +34,7 @@ export const mount = async (config: MountConfig) => {
   if (plugins.includes("service-worker")) {
     registerServiceWorker();
   }
-  const [, node] = await Promise.all([
+  const [, node, appStatus] = await Promise.all([
     hydrateRequiredChunks(),
     createApp(),
     injectGlobalRuntime().ready,
@@ -54,19 +55,32 @@ export const mount = async (config: MountConfig) => {
   hydrateViewStateCache(viewStateCache, container);
   cleanRuntime(container);
 
-  const renderMethod = viewStateCache.size ? "hydrate" : "render";
+  if (appStatus.isOutdated) {
+    injectGlobalErrorHandler(() => {
+      location.reload(true);
+    });
+  }
+
+  const renderMethod =
+    !appStatus.isOutdated && viewStateCache.size ? "hydrate" : "render";
   ReactDOM[renderMethod](
     <PxGlobalClientProvider
       viewStateCache={viewStateCache}
       staticChunkModuleCache={staticChunkModuleCache}
+      reloadOnNavigation={appStatus.isOutdated}
     >
       {node}
     </PxGlobalClientProvider>,
     container
   );
-  if (renderMethod === "render") {
+  if (renderMethod === "render" && !viewStateCache.size) {
     logger.warn(
       "Falling back to ReactDom.render instead of ReactDom.hydrate because there is a mismatch between the view store cache and the rendered chunks"
+    );
+  }
+  if (renderMethod === "render" && appStatus.isOutdated) {
+    logger.warn(
+      "Falling back to ReactDom.render instead of ReactDom.hydrate because the server has another version than the client and cannot send a valid application state"
     );
   }
   return container;

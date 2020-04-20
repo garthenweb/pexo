@@ -12,12 +12,15 @@ const createResolvablePromise = () => {
 export const createEventHandler = (queue?: string[]) => {
   const events = queue || [];
   const readyHandler = createResolvablePromise();
+  let isOutdated = false;
 
   const executeEvent = (eventName: string) => {
     switch (eventName) {
       case "start":
         readyHandler.resolve();
         break;
+      case "invalidate":
+        isOutdated = true;
     }
   };
 
@@ -33,7 +36,10 @@ export const createEventHandler = (queue?: string[]) => {
       executeEvent(eventName);
     },
     get ready() {
-      return readyHandler.resolved;
+      return readyHandler.resolved.then(() => eventHandler);
+    },
+    get isOutdated() {
+      return isOutdated;
     },
   };
 
