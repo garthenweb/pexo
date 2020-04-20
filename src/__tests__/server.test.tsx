@@ -7,6 +7,16 @@ import Route from "../components/Route";
 import Routes from "../components/Routes";
 
 describe("The server", () => {
+  let lastEnv = {};
+  beforeEach(() => {
+    lastEnv = process.env;
+    process.env = { ...lastEnv };
+  });
+
+  afterEach(() => {
+    process.env = lastEnv;
+  });
+
   it("should serve a simple application on the server", async () => {
     const { app, logger } = createMiddlewareWithComponent(() => (
       <>Hello World</>
@@ -422,7 +432,7 @@ describe("The server", () => {
   });
 
   describe("service worker responses", () => {
-    it("should return route content only for Service-Worker-Navigation-Preload", async () => {
+    it("should return content with an invalid status code for not matching version", async () => {
       const Page = () => {
         return (
           <TestingViewChunk
@@ -449,6 +459,42 @@ describe("The server", () => {
         .set("Service-Worker-Navigation-Preload", "true")
         .expect("Content-Type", "text/html")
         .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toMatch(/^<div>Content<\/div>/);
+          expect(res.text).toContain("data-px-hydration-chunks");
+          expect(res.text).not.toContain("data-px-server-template-routes");
+        });
+    });
+
+    it("should return content with an invalid status code for not matching version", async () => {
+      process.env.VERSION = "v1.1";
+      const Page = () => {
+        return (
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Content</div> })}
+          />
+        );
+      };
+      const { app, logger } = createMiddlewareWithComponent(() => (
+        <>
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Header</div> })}
+          />
+          <Routes>
+            <Route path="/" component={Page} />
+          </Routes>
+          <TestingViewChunk
+            loader={() => ({ View: () => <div>Footer</div> })}
+          />
+        </>
+      ));
+
+      await request(app)
+        .get("/")
+        .set("Service-Worker-Navigation-Preload", "v1.0")
+        .expect("Content-Type", "text/html")
+        .expect(205)
         .expect((res) => {
           expect(logger.error).not.toHaveBeenCalled();
           expect(res.text).toMatch(/^<div>Content<\/div>/);

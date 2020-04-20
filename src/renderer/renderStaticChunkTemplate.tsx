@@ -10,7 +10,7 @@ type RenderPartial = "header" | "footer" | "routes";
 interface Config {
   createApp: () => JSX.Element;
   createAppContext: (node: ReactNode) => JSX.Element;
-  renderPartial?: RenderPartial;
+  shouldRenderRoutesOnly?: RenderPartial;
 }
 
 export interface ChunkTemplate extends Partial<RegistryItem<any, any>> {
@@ -21,7 +21,7 @@ export interface ChunkTemplate extends Partial<RegistryItem<any, any>> {
 export const renderStaticChunkTemplate = ({
   createAppContext,
   createApp,
-  renderPartial,
+  shouldRenderRoutesOnly,
 }: Config): ChunkTemplate[] => {
   const registry = new Map<string, RegistryItem<any, any>>();
   const template = deletePartial(
@@ -30,7 +30,7 @@ export const renderStaticChunkTemplate = ({
         {createAppContext(createApp())}
       </ServerChunkRegisterProvider>
     ),
-    renderPartial
+    shouldRenderRoutesOnly
   );
   return getOrderedChunkIdsFromTemplate(template).map((chunk) => {
     const chunkData = registry.get(chunk.id!);
@@ -48,9 +48,9 @@ const ROUTES_TEMPLATE_END =
 
 const deletePartial = (
   template: string,
-  renderPartial?: RenderPartial
+  shouldRenderRoutesOnly?: RenderPartial
 ): string => {
-  if (!renderPartial) {
+  if (!shouldRenderRoutesOnly) {
     return template
       .replace(ROUTES_TEMPLATE_START, "")
       .replace(ROUTES_TEMPLATE_END, "");
@@ -60,19 +60,21 @@ const deletePartial = (
   if (indexOfRoutesStart === -1 || indexOfRoutesEnd === -1) {
     return template;
   }
-  if (renderPartial === "routes") {
+  if (shouldRenderRoutesOnly === "routes") {
     return template.slice(
       indexOfRoutesStart + ROUTES_TEMPLATE_START.length,
       indexOfRoutesEnd
     );
   }
-  if (renderPartial === "header") {
+  if (shouldRenderRoutesOnly === "header") {
     return template.slice(0, indexOfRoutesStart);
   }
-  if (renderPartial === "footer") {
+  if (shouldRenderRoutesOnly === "footer") {
     return template.slice(indexOfRoutesEnd + ROUTES_TEMPLATE_END.length);
   }
-  throw new Error(`Unknown value for renderPartial \`${renderPartial}\``);
+  throw new Error(
+    `Unknown value for shouldRenderRoutesOnly \`${shouldRenderRoutesOnly}\``
+  );
 };
 
 // a chunk in the template looks like the following:

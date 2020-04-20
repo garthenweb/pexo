@@ -62,7 +62,10 @@ const spawnClientWatch = (entry: string) => {
     {
       shell: true,
       stdio: ["pipe", "inherit", "inherit"],
-      env: Object.assign({ PEXO_CONTEXT: "client" }, process.env),
+      env: Object.assign(
+        { PEXO_CONTEXT: "client", VERSION: generateVersionHash() },
+        process.env
+      ),
     }
   );
   return childProcess;
@@ -86,7 +89,10 @@ const spawnServerBuildDev = (entry: string) => {
     {
       shell: true,
       stdio: ["pipe", "inherit", "inherit"],
-      env: Object.assign({ PEXO_CONTEXT: "server" }, process.env),
+      env: Object.assign(
+        { PEXO_CONTEXT: "server", VERSION: generateVersionHash() },
+        process.env
+      ),
     }
   );
   return childProcess;
@@ -107,6 +113,16 @@ const parcelExecPath = path.join(
   ".bin",
   "parcel"
 );
+
+const generateVersionHash = () => {
+  if (process.env.VERSION) {
+    return process.env.VERSION;
+  }
+  return require("child_process")
+    .execSync("git rev-parse HEAD")
+    .toString()
+    .trim();
+};
 
 const distDir = path.join(process.cwd(), "dist");
 

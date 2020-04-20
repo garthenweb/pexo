@@ -18,6 +18,7 @@ addEventListener("install", (event) => {
       ]);
     })()
   );
+  self.skipWaiting();
 });
 
 addEventListener("activate", (event) => {
@@ -40,9 +41,10 @@ addEventListener("fetch", (event) => {
             if (preloadResponse) {
               return preloadResponse;
             }
-            return fetch(includeURL, {
+            return fetch(event.request.url, {
               headers: {
-                "service-worker-navigation-preload": "true",
+                "service-worker-navigation-preload":
+                  process.env.VERSION ?? "true",
               },
             });
           }

@@ -19,6 +19,7 @@ import { Plugin } from "./plugins";
 import { READY_EVENT } from "./runtime/snippets";
 import { renderHeadToString } from "./renderer/renderHead";
 import { createRequest } from "./request";
+import { exists } from "./utils/exists";
 
 interface MiddlewareConfig {
   createApp: () => JSX.Element;
@@ -40,11 +41,17 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
   return async (req: express.Request, res: express.Response) => {
     logger.info(`Receive request with url \`${req.url}\``);
     const disableServerSideRendering = req.query.ssr === "0";
-    const renderAsPartial =
-      req.headers["service-worker-navigation-preload"] === "true";
-    if (renderAsPartial) {
+    const navPreloadHeader = req.headers[
+      "service-worker-navigation-preload"
+    ] as string | undefined;
+    const shouldRenderRoutesOnly = exists(navPreloadHeader);
+    const clientVersion =
+      navPreloadHeader && navPreloadHeader !== "true"
+        ? navPreloadHeader
+        : undefined;
+    if (shouldRenderRoutesOnly) {
       logger.info(
-        `Detects to render request with url \`${req.url}\` as partial`
+        `Detects to render request with url \`${req.url}\` to only serve routes content`
       );
     }
     const renderTemplate = (() => {
@@ -68,7 +75,9 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       let orderedChunks = renderStaticChunkTemplate({
         createApp,
         createAppContext,
-        renderPartial: renderAsPartial ? "routes" : renderTemplate,
+        shouldRenderRoutesOnly: shouldRenderRoutesOnly
+          ? "routes"
+          : renderTemplate,
       });
       orderedChunks = enhanceChunksWithViewStateCache(
         requestViewStateCache,
@@ -76,7 +85,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         { request }
       );
       let headConfig = {};
-      if (!disableServerSideRendering && !renderAsPartial) {
+      if (!disableServerSideRendering && !shouldRenderRoutesOnly) {
         try {
           ({ headConfig } = await preloadBlockingChunks(orderedChunks, {
             request,
@@ -104,7 +113,10 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         "Link",
         [...assets.css.links, ...assets.js.links].join(", ")
       );
-      const renderHead = !renderAsPartial && renderTemplate !== "footer";
+      if (clientVersion && clientVersion !== process.env.VERSION) {
+        res.status(205);
+      }
+      const renderHead = !shouldRenderRoutesOnly && renderTemplate !== "footer";
       if (renderHead) {
         res.write(
           htmlStart(
@@ -116,7 +128,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         );
       }
 
-      if (disableServerSideRendering && !renderAsPartial) {
+      if (disableServerSideRendering && !shouldRenderRoutesOnly) {
         res.write(READY_EVENT + htmlEnd);
         res.end();
         logger.info(`End response for request with url \`${req.url}\``);
@@ -134,7 +146,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         if (!renderHead) {
           res.write(hydrationChunkScript);
         }
-        if (!renderAsPartial && renderTemplate !== "header") {
+        if (!shouldRenderRoutesOnly && renderTemplate !== "header") {
           res.write(READY_EVENT + htmlEnd);
         }
         res.end();
