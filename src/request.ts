@@ -2,16 +2,22 @@ import { generateRequestCacheKey } from "./utils/cacheKey";
 
 type RunTask<T, R> = (...inputs: Array<T>) => Promise<R>;
 
+enum CacheStrategies {
+  CacheFirst,
+}
+
 interface Resource<T, R> {
   inputs: Array<T>;
   resourceId: string;
   config: RequestResourceConfig;
   runTask: RunTask<T, R>;
+  strategy: CacheStrategies;
 }
 
 interface RequestResourceConfig {
   cacheable?: boolean;
   ttl?: number;
+  strategy?: CacheStrategies;
 }
 
 type ResourceCall<T, R> = (input: T) => Promise<Resource<T, R>>;
@@ -27,6 +33,7 @@ export const createRequestResource = <T, R>(
     resourceId,
     config,
     runTask,
+    strategy: config.strategy ?? CacheStrategies.CacheFirst,
   });
 };
 
@@ -85,33 +92,56 @@ const createNestedPromise = <T>(p: Promise<T>): any => {
 };
 
 const executeResource = async <T, R>(
-  resource: Promise<Resource<T, R>>,
+  asyncResource: Promise<Resource<T, R>>,
   { cache }: Config
 ) => {
-  const res = await resource;
-  const cacheKey = res.config.cacheable
-    ? generateRequestCacheKey(res.resourceId, res.inputs)
+  const resource = await asyncResource;
+  const cachedResource = await retrieveFromCache(cache, resource);
+
+  if (cachedResource) {
+    return cachedResource;
+  }
+
+  return executeAndStoreInCache(cache, resource);
+};
+
+const retrieveFromCache = async <T, R>(
+  cache: AsyncCache,
+  { resourceId, inputs, config }: Resource<T, R>
+) => {
+  const cacheKey = config.cacheable
+    ? generateRequestCacheKey(resourceId, inputs)
     : null;
 
   if (cacheKey && cache.has(cacheKey)) {
     const item = (await cache.get(cacheKey))!;
-    if (!res.config.ttl) {
+    if (!config.ttl) {
       return item.value;
     }
-    const expiresAt = item.createdAt + res.config.ttl;
+    const expiresAt = item.createdAt + config.ttl;
     if (Date.now() <= expiresAt) {
       return item.value;
     }
   }
+  return void 0;
+};
 
-  const req = res.runTask(...res.inputs);
+const executeAndStoreInCache = async <T, R>(
+  cache: AsyncCache,
+  { resourceId, inputs, config, runTask }: Resource<T, R>
+) => {
+  const cacheKey = config.cacheable
+    ? generateRequestCacheKey(resourceId, inputs)
+    : null;
+
+  const request = runTask(...inputs);
 
   if (cacheKey) {
     cache.set(cacheKey, {
       createdAt: Date.now(),
-      value: req,
+      value: request,
     });
   }
 
-  return req;
+  return request;
 };
