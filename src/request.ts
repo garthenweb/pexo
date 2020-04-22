@@ -6,22 +6,25 @@ export enum CacheStrategies {
   CacheFirst,
   NetworkOnly,
   NetworkFirst,
+  CacheOnly,
   // StaleWhileRevalidate,
-  // CacheOnly,
 }
 
 interface Resource<T, R> {
   inputs: Array<T>;
   resourceId: string;
-  config: RequestResourceConfig;
   runTask: RunTask<T, R>;
   strategy: CacheStrategies;
+  generateCacheKey: (resourceId: string, inputs: any[]) => string;
+  cacheable?: boolean;
+  ttl?: number;
 }
 
 interface RequestResourceConfig {
   cacheable?: boolean;
   ttl?: number;
   strategy?: CacheStrategies;
+  generateCacheKey?: (resourceId: string, inputs: any[]) => string;
 }
 
 type ResourceCall<T, R> = (input: T) => Promise<Resource<T, R>>;
@@ -33,11 +36,13 @@ export const createRequestResource = <T, R>(
 ): ResourceCall<T, R> => {
   const resourceId = (++lastResourceId).toString();
   return async (...args: T[]) => ({
-    inputs: await Promise.all(args),
     resourceId,
-    config,
+    inputs: await Promise.all(args),
+    ttl: config.ttl,
+    cacheable: config.cacheable,
     runTask,
     strategy: config.strategy ?? CacheStrategies.CacheFirst,
+    generateCacheKey: config.generateCacheKey ?? generateRequestCacheKey,
   });
 };
 
@@ -59,7 +64,7 @@ interface SyncCache {
   delete: (key: string) => void;
 }
 
-const createCache = (): AsyncCache => {
+export const createAsyncCache = (): AsyncCache => {
   const cache = new Map<string, CacheItem<unknown>>();
   return {
     get: async (key: string) => cache.get(key),
@@ -82,7 +87,7 @@ export type Request = <T = any, R = any>(
 ) => Promise<R>;
 
 export const createRequest = ({
-  cache = createCache(),
+  cache = createAsyncCache(),
   pendingCache = new Map(),
 }: Partial<Config> = {}) => {
   const request: Request = <T, R>(
@@ -113,11 +118,11 @@ const executeResource = async <T, R>(
   config: Config
 ) => {
   const resource = await asyncResource;
-  const cacheKey = resource.config.cacheable
-    ? generateRequestCacheKey(resource.resourceId, resource.inputs)
+  const cacheKey = resource.cacheable
+    ? resource.generateCacheKey(resource.resourceId, resource.inputs)
     : null;
 
-  switch (resource.config.strategy) {
+  switch (resource.strategy) {
     case CacheStrategies.NetworkOnly: {
       return executeAndStoreInCache(resource, cacheKey, config);
     }
@@ -129,16 +134,31 @@ const executeResource = async <T, R>(
         return cached ?? Promise.reject(error);
       }
     }
-    case CacheStrategies.CacheFirst:
-    default: {
+    case CacheStrategies.CacheOnly: {
+      const cached = await retrieveFromCache(resource, cacheKey, config);
+      if (!cached) {
+        return Promise.reject(
+          new Error(
+            "Could not retrieve the value from cache for CacheOnly strategy"
+          )
+        );
+      }
+      return cached;
+    }
+    case CacheStrategies.CacheFirst: {
       const cached = await retrieveFromCache(resource, cacheKey, config);
       return cached ?? executeAndStoreInCache(resource, cacheKey, config);
+    }
+    default: {
+      throw new Error(
+        "Unknown cache strategy used. Choose one of CacheFirst, CacheOnly, NetworkFirst and NetworkOnly."
+      );
     }
   }
 };
 
 const retrieveFromCache = async <T, R>(
-  { config }: Resource<T, R>,
+  { ttl }: Resource<T, R>,
   cacheKey: string | null,
   { cache }: Config
 ) => {
@@ -151,11 +171,11 @@ const retrieveFromCache = async <T, R>(
     return void 0;
   }
 
-  if (!config.ttl) {
+  if (!ttl) {
     return item.value;
   }
 
-  const expiresAt = item.createdAt + config.ttl;
+  const expiresAt = item.createdAt + ttl;
   if (Date.now() <= expiresAt) {
     return item.value;
   }

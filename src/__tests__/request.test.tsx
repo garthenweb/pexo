@@ -3,6 +3,7 @@ import {
   createRequest,
   createRequestResource,
   CacheStrategies,
+  createAsyncCache,
 } from "../request";
 
 describe("request", () => {
@@ -99,6 +100,56 @@ describe("request", () => {
       await nextTick();
       await p;
       expect(createPromise).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("for CacheOnly strategy", () => {
+    it("should use a cached resources", async () => {
+      const cache = createAsyncCache();
+      await cache.set("1", {
+        createdAt: Date.now(),
+        value: 42,
+      });
+      request = createRequest({
+        cache,
+      });
+      const createPromise = jest.fn((a: string) => Promise.resolve(a));
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+        strategy: CacheStrategies.CacheOnly,
+        generateCacheKey: () => "1",
+      });
+      expect(await request(get("1"))).toBe(42);
+      expect(createPromise).toHaveBeenCalledTimes(0);
+    });
+
+    it("should fail if no cached resource was found", async () => {
+      const createPromise = jest.fn((a: string) => Promise.resolve(a));
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+        strategy: CacheStrategies.CacheOnly,
+        generateCacheKey: () => "1",
+      });
+      expect(createPromise).toHaveBeenCalledTimes(0);
+      await expect(request(get("1"))).rejects.toBeDefined();
+    });
+  });
+
+  describe("for NetworkOnly strategy", () => {
+    it("should not use cached resources", async () => {
+      const createPromise = jest.fn((a: string) => Promise.resolve(a));
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+        strategy: CacheStrategies.NetworkOnly,
+      });
+      const first = await request(get("1"));
+      const second = await request(get("1"));
+      expect(createPromise).toHaveBeenCalledTimes(2);
+      expect(first).toBe(second);
+
+      const third = await request(get("2"));
+      expect(third).not.toBe(first);
+      expect(createPromise).toHaveBeenCalledTimes(3);
     });
   });
 
