@@ -87,6 +87,19 @@ describe("request", () => {
       expect(createPromise2).toHaveBeenCalledTimes(1);
       expect(first).not.toBe(second);
     });
+
+    it("should bundle resources that start in parallel", async () => {
+      const controller = awaiter();
+      const createPromise = jest.fn((a: string) => controller.promise);
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+      });
+      const p = Promise.all([request(get("1")), request(get("1"))]);
+      controller.resolve();
+      await nextTick();
+      await p;
+      expect(createPromise).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("for NetworkOnly strategy", () => {

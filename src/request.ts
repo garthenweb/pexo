@@ -48,7 +48,6 @@ interface CacheItem<T> {
 
 interface AsyncCache {
   get: (key: string) => Promise<CacheItem<any> | undefined>;
-  has: (key: string) => Promise<boolean>;
   set: <T = unknown>(key: string, item: CacheItem<T>) => Promise<void>;
   delete: (key: string) => Promise<void>;
 }
@@ -64,7 +63,6 @@ const createCache = (): AsyncCache => {
   const cache = new Map<string, CacheItem<unknown>>();
   return {
     get: async (key: string) => cache.get(key),
-    has: async (key: string) => cache.has(key),
     set: async <T = unknown>(key: string, item: CacheItem<T>) => {
       cache.set(key, item);
     },
@@ -144,16 +142,24 @@ const retrieveFromCache = async <T, R>(
   cacheKey: string | null,
   { cache }: Config
 ) => {
-  if (cacheKey && (await cache.has(cacheKey))) {
-    const item = (await cache.get(cacheKey))!;
-    if (!config.ttl) {
-      return item.value;
-    }
-    const expiresAt = item.createdAt + config.ttl;
-    if (Date.now() <= expiresAt) {
-      return item.value;
-    }
+  if (!cacheKey) {
+    return void 0;
   }
+
+  const item = await cache.get(cacheKey);
+  if (!item) {
+    return void 0;
+  }
+
+  if (!config.ttl) {
+    return item.value;
+  }
+
+  const expiresAt = item.createdAt + config.ttl;
+  if (Date.now() <= expiresAt) {
+    return item.value;
+  }
+
   return void 0;
 };
 
@@ -162,11 +168,15 @@ const executeAndStoreInCache = async <T, R>(
   cacheKey: string | null,
   { cache, pendingCache }: Config
 ) => {
-  const request = runTask(...inputs);
-
   if (!cacheKey) {
-    return request;
+    return runTask(...inputs);
   }
+
+  if (pendingCache.has(cacheKey)) {
+    return pendingCache.get(cacheKey);
+  }
+
+  const request = runTask(...inputs);
 
   pendingCache.set(cacheKey, {
     createdAt: Date.now(),
