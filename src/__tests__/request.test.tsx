@@ -1,4 +1,4 @@
-import { wait } from "./utils";
+import { wait, awaiter, nextTick } from "./utils";
 import { createRequest, createRequestResource } from "../request";
 
 describe("request", () => {
@@ -68,5 +68,69 @@ describe("request", () => {
     expect(createPromise1).toHaveBeenCalledTimes(1);
     expect(createPromise2).toHaveBeenCalledTimes(1);
     expect(first).not.toBe(second);
+  });
+
+  describe("nested promise getter", () => {
+    it("should return getter which resolve with the value of the possible result", async () => {
+      const obj = { id: 42, foo: { bar: { baz: 5 } } };
+      const get = createRequestResource(() => Promise.resolve(obj));
+
+      const result = request(get());
+      expect(await result).toEqual(obj);
+      expect(result.then).toBeDefined();
+      expect(result.id).toBeDefined();
+      expect(result.foo).toBeDefined();
+      expect(result.foo.bar).toBeDefined();
+      expect(result.foo.bar.baz).toBeDefined();
+
+      expect(await result.id).toEqual(42);
+      expect(await result.foo).toEqual(obj.foo);
+      expect(await result.foo.bar).toEqual(obj.foo.bar);
+      expect(await result.foo.bar.baz).toEqual(5);
+    });
+
+    it("should should not be enumerable", async () => {
+      const obj = { id: 42, foo: { bar: { baz: 5 } } };
+      const get = createRequestResource(() => Promise.resolve(obj));
+
+      const result = request(get());
+      expect(Object.keys(result)).toEqual([]);
+    });
+
+    it("should allow to parallelize requests by default if independent", async () => {
+      const get1Await = awaiter();
+      const get2Await = awaiter();
+
+      const get1Call = jest.fn(() => get1Await.promise);
+      const get2Call = jest.fn(() => get2Await.promise);
+      const dependsCall = jest.fn((id: number) => Promise.resolve(id + 5));
+
+      const get1 = createRequestResource(get1Call);
+      const get2 = createRequestResource(get2Call);
+      const getDependsOn1 = createRequestResource(dependsCall);
+
+      expect(get1Call).not.toHaveBeenCalled();
+      expect(get2Call).not.toHaveBeenCalled();
+      expect(dependsCall).not.toHaveBeenCalled();
+
+      const pGet1 = request(get1());
+      const pGetDependsOn1 = request(getDependsOn1(pGet1.id));
+      const pGet2 = request(get2());
+
+      await nextTick();
+
+      expect(get1Call).toHaveBeenCalled();
+      expect(get2Call).toHaveBeenCalled();
+      expect(dependsCall).not.toHaveBeenCalled();
+
+      get1Await.resolve({ id: 42 });
+      get2Await.resolve({ id: 43 });
+      await nextTick();
+      expect(dependsCall).toHaveBeenCalledWith(42);
+
+      expect(await pGet1).toEqual({ id: 42 });
+      expect(await pGet2).toEqual({ id: 43 });
+      expect(await pGetDependsOn1).toEqual(47);
+    });
   });
 });

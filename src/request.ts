@@ -23,7 +23,7 @@ export const createRequestResource = <T, R>(
 ): ResourceCall<T, R> => {
   const resourceId = (++lastResourceId).toString();
   return async (input: T) => ({
-    input,
+    input: await input,
     resourceId,
     config,
     runTask,
@@ -53,43 +53,65 @@ const createCache = (): AsyncCache => {
 };
 
 interface Config {
-  cache?: AsyncCache;
+  cache: AsyncCache;
 }
 
 export type Request = <T = any, R = any>(
   resource: Promise<Resource<T, R>>
 ) => Promise<R>;
 
-export const createRequest = ({ cache = createCache() }: Config = {}) => {
-  const request: Request = async <T, R>(
+export const createRequest = ({
+  cache = createCache(),
+}: Partial<Config> = {}) => {
+  const request: Request = <T, R>(
     resource: Promise<Resource<T, R>>
   ): Promise<R> => {
-    const res = await resource;
-    const cacheKey = res.config.cacheable
-      ? generateRequestCacheKey(res.resourceId, [res.input])
-      : null;
-
-    if (cacheKey && cache.has(cacheKey)) {
-      const item = (await cache.get(cacheKey))!;
-      if (!res.config.ttl) {
-        return item.value;
-      }
-      const expiresAt = item.createdAt + res.config.ttl;
-      if (Date.now() <= expiresAt) {
-        return item.value;
-      }
-    }
-
-    const req = res.runTask(res.input);
-
-    if (cacheKey) {
-      cache.set(cacheKey, {
-        createdAt: Date.now(),
-        value: req,
-      });
-    }
-
-    return req;
+    return createNestedPromise(executeResource(resource, { cache }));
   };
   return request;
+};
+
+const nestedPromiseHandler = {
+  get: (promise: Promise<any>, prop: string) => {
+    if (prop === "then") {
+      return promise.then.bind(promise);
+    }
+    return createNestedPromise(promise.then((res) => res[prop]));
+  },
+};
+
+const createNestedPromise = <T>(p: Promise<T>): any => {
+  return new Proxy(p, nestedPromiseHandler);
+};
+
+const executeResource = async <T, R>(
+  resource: Promise<Resource<T, R>>,
+  { cache }: Config
+) => {
+  const res = await resource;
+  const cacheKey = res.config.cacheable
+    ? generateRequestCacheKey(res.resourceId, [res.input])
+    : null;
+
+  if (cacheKey && cache.has(cacheKey)) {
+    const item = (await cache.get(cacheKey))!;
+    if (!res.config.ttl) {
+      return item.value;
+    }
+    const expiresAt = item.createdAt + res.config.ttl;
+    if (Date.now() <= expiresAt) {
+      return item.value;
+    }
+  }
+
+  const req = res.runTask(res.input);
+
+  if (cacheKey) {
+    cache.set(cacheKey, {
+      createdAt: Date.now(),
+      value: req,
+    });
+  }
+
+  return req;
 };
