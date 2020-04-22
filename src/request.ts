@@ -1,9 +1,9 @@
 import { generateRequestCacheKey } from "./utils/cacheKey";
 
-type RunTask<T, R> = (input: T) => Promise<R>;
+type RunTask<T, R> = (...inputs: Array<T>) => Promise<R>;
 
 interface Resource<T, R> {
-  input: T;
+  inputs: Array<T>;
   resourceId: string;
   config: RequestResourceConfig;
   runTask: RunTask<T, R>;
@@ -22,8 +22,8 @@ export const createRequestResource = <T, R>(
   config: RequestResourceConfig = {}
 ): ResourceCall<T, R> => {
   const resourceId = (++lastResourceId).toString();
-  return async (input: T) => ({
-    input: await input,
+  return async (...args: T[]) => ({
+    inputs: await Promise.all(args),
     resourceId,
     config,
     runTask,
@@ -90,7 +90,7 @@ const executeResource = async <T, R>(
 ) => {
   const res = await resource;
   const cacheKey = res.config.cacheable
-    ? generateRequestCacheKey(res.resourceId, [res.input])
+    ? generateRequestCacheKey(res.resourceId, res.inputs)
     : null;
 
   if (cacheKey && cache.has(cacheKey)) {
@@ -104,7 +104,7 @@ const executeResource = async <T, R>(
     }
   }
 
-  const req = res.runTask(res.input);
+  const req = res.runTask(...res.inputs);
 
   if (cacheKey) {
     cache.set(cacheKey, {

@@ -21,6 +21,13 @@ describe("request", () => {
     expect(await request(get("2"))).toBe("yesyes2");
   });
 
+  it("should allow more than one argument", async () => {
+    const get = createRequestResource((a: string, b: string, c: string) =>
+      Promise.resolve("yesyes" + a + b + c)
+    );
+    expect(await request(get("1", "2", "3"))).toBe("yesyes123");
+  });
+
   it("should cache resources", async () => {
     const createPromise = jest.fn((a: string) => Promise.resolve("yesyes" + a));
     const get = createRequestResource(createPromise, {
