@@ -91,9 +91,7 @@ describe("request", () => {
 
   describe("for NetworkOnly strategy", () => {
     it("should not use cached resources", async () => {
-      const createPromise = jest.fn((a: string) =>
-        Promise.resolve("yesyes" + a)
-      );
+      const createPromise = jest.fn((a: string) => Promise.resolve(a));
       const get = createRequestResource(createPromise, {
         cacheable: true,
         strategy: CacheStrategies.NetworkOnly,
@@ -105,6 +103,46 @@ describe("request", () => {
 
       const third = await request(get("2"));
       expect(third).not.toBe(first);
+      expect(createPromise).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("for NetworkFirst strategy", () => {
+    it("should not use cached resources", async () => {
+      const createPromise = jest.fn((a: string) => Promise.resolve(a));
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+        strategy: CacheStrategies.NetworkFirst,
+      });
+      const first = await request(get("1"));
+      const second = await request(get("1"));
+      expect(createPromise).toHaveBeenCalledTimes(2);
+      expect(first).toBe("1");
+      expect(second).toBe("1");
+    });
+
+    it("should fall back to cached resources if network fails", async () => {
+      let callCount = 0;
+      const createPromise = jest.fn((a: string) => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(a);
+        } else {
+          return Promise.reject("Can only handle the first call");
+        }
+      });
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+        strategy: CacheStrategies.NetworkFirst,
+      });
+      const first = await request(get("1"));
+      const second = await request(get("1"));
+      expect(createPromise).toHaveBeenCalledTimes(2);
+      expect(first).toBe(second);
+
+      await expect(request(get("2"))).rejects.toBe(
+        "Can only handle the first call"
+      );
       expect(createPromise).toHaveBeenCalledTimes(3);
     });
   });

@@ -5,6 +5,9 @@ type RunTask<T, R> = (...inputs: Array<T>) => Promise<R>;
 export enum CacheStrategies {
   CacheFirst,
   NetworkOnly,
+  NetworkFirst,
+  // StaleWhileRevalidate,
+  // CacheOnly,
 }
 
 interface Resource<T, R> {
@@ -45,23 +48,35 @@ interface CacheItem<T> {
 
 interface AsyncCache {
   get: (key: string) => Promise<CacheItem<any> | undefined>;
-  has: (key: string) => boolean;
+  has: (key: string) => Promise<boolean>;
   set: <T = unknown>(key: string, item: CacheItem<T>) => Promise<void>;
+  delete: (key: string) => Promise<void>;
+}
+
+interface SyncCache {
+  get: (key: string) => CacheItem<any> | undefined;
+  has: (key: string) => boolean;
+  set: <T = unknown>(key: string, item: CacheItem<T>) => void;
+  delete: (key: string) => void;
 }
 
 const createCache = (): AsyncCache => {
   const cache = new Map<string, CacheItem<unknown>>();
   return {
     get: async (key: string) => cache.get(key),
-    has: (key: string) => cache.has(key),
+    has: async (key: string) => cache.has(key),
     set: async <T = unknown>(key: string, item: CacheItem<T>) => {
       cache.set(key, item);
+    },
+    delete: async (key: string) => {
+      cache.delete(key);
     },
   };
 };
 
 interface Config {
   cache: AsyncCache;
+  pendingCache: SyncCache;
 }
 
 export type Request = <T = any, R = any>(
@@ -70,11 +85,14 @@ export type Request = <T = any, R = any>(
 
 export const createRequest = ({
   cache = createCache(),
+  pendingCache = new Map(),
 }: Partial<Config> = {}) => {
   const request: Request = <T, R>(
     resource: Promise<Resource<T, R>>
   ): Promise<R> => {
-    return createNestedPromise(executeResource(resource, { cache }));
+    return createNestedPromise(
+      executeResource(resource, { cache, pendingCache })
+    );
   };
   return request;
 };
@@ -94,7 +112,7 @@ const createNestedPromise = <T>(p: Promise<T>): any => {
 
 const executeResource = async <T, R>(
   asyncResource: Promise<Resource<T, R>>,
-  { cache }: Config
+  config: Config
 ) => {
   const resource = await asyncResource;
   const cacheKey = resource.config.cacheable
@@ -103,22 +121,30 @@ const executeResource = async <T, R>(
 
   switch (resource.config.strategy) {
     case CacheStrategies.NetworkOnly: {
-      return executeAndStoreInCache(cache, cacheKey, resource);
+      return executeAndStoreInCache(resource, cacheKey, config);
+    }
+    case CacheStrategies.NetworkFirst: {
+      try {
+        return await executeAndStoreInCache(resource, cacheKey, config);
+      } catch (error) {
+        const cached = await retrieveFromCache(resource, cacheKey, config);
+        return cached ?? Promise.reject(error);
+      }
     }
     case CacheStrategies.CacheFirst:
     default: {
-      const cached = await retrieveFromCache(cache, cacheKey, resource);
-      return cached ?? executeAndStoreInCache(cache, cacheKey, resource);
+      const cached = await retrieveFromCache(resource, cacheKey, config);
+      return cached ?? executeAndStoreInCache(resource, cacheKey, config);
     }
   }
 };
 
 const retrieveFromCache = async <T, R>(
-  cache: AsyncCache,
+  { config }: Resource<T, R>,
   cacheKey: string | null,
-  { config }: Resource<T, R>
+  { cache }: Config
 ) => {
-  if (cacheKey && cache.has(cacheKey)) {
+  if (cacheKey && (await cache.has(cacheKey))) {
     const item = (await cache.get(cacheKey))!;
     if (!config.ttl) {
       return item.value;
@@ -132,18 +158,30 @@ const retrieveFromCache = async <T, R>(
 };
 
 const executeAndStoreInCache = async <T, R>(
-  cache: AsyncCache,
+  { inputs, runTask }: Resource<T, R>,
   cacheKey: string | null,
-  { inputs, runTask }: Resource<T, R>
+  { cache, pendingCache }: Config
 ) => {
   const request = runTask(...inputs);
 
-  if (cacheKey) {
-    cache.set(cacheKey, {
-      createdAt: Date.now(),
-      value: request,
-    });
+  if (!cacheKey) {
+    return request;
   }
 
-  return request;
+  pendingCache.set(cacheKey, {
+    createdAt: Date.now(),
+    value: request,
+  });
+
+  return request
+    .then((res) => {
+      cache.set(cacheKey, {
+        createdAt: Date.now(),
+        value: request,
+      });
+      return res;
+    })
+    .finally(() => {
+      pendingCache.delete(cacheKey);
+    });
 };
