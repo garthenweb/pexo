@@ -2,8 +2,9 @@ import { generateRequestCacheKey } from "./utils/cacheKey";
 
 type RunTask<T, R> = (...inputs: Array<T>) => Promise<R>;
 
-enum CacheStrategies {
+export enum CacheStrategies {
   CacheFirst,
+  NetworkOnly,
 }
 
 interface Resource<T, R> {
@@ -96,23 +97,27 @@ const executeResource = async <T, R>(
   { cache }: Config
 ) => {
   const resource = await asyncResource;
-  const cachedResource = await retrieveFromCache(cache, resource);
+  const cacheKey = resource.config.cacheable
+    ? generateRequestCacheKey(resource.resourceId, resource.inputs)
+    : null;
 
-  if (cachedResource) {
-    return cachedResource;
+  switch (resource.config.strategy) {
+    case CacheStrategies.NetworkOnly: {
+      return executeAndStoreInCache(cache, cacheKey, resource);
+    }
+    case CacheStrategies.CacheFirst:
+    default: {
+      const cached = await retrieveFromCache(cache, cacheKey, resource);
+      return cached ?? executeAndStoreInCache(cache, cacheKey, resource);
+    }
   }
-
-  return executeAndStoreInCache(cache, resource);
 };
 
 const retrieveFromCache = async <T, R>(
   cache: AsyncCache,
-  { resourceId, inputs, config }: Resource<T, R>
+  cacheKey: string | null,
+  { config }: Resource<T, R>
 ) => {
-  const cacheKey = config.cacheable
-    ? generateRequestCacheKey(resourceId, inputs)
-    : null;
-
   if (cacheKey && cache.has(cacheKey)) {
     const item = (await cache.get(cacheKey))!;
     if (!config.ttl) {
@@ -128,12 +133,9 @@ const retrieveFromCache = async <T, R>(
 
 const executeAndStoreInCache = async <T, R>(
   cache: AsyncCache,
-  { resourceId, inputs, config, runTask }: Resource<T, R>
+  cacheKey: string | null,
+  { inputs, runTask }: Resource<T, R>
 ) => {
-  const cacheKey = config.cacheable
-    ? generateRequestCacheKey(resourceId, inputs)
-    : null;
-
   const request = runTask(...inputs);
 
   if (cacheKey) {

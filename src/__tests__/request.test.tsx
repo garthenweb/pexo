@@ -1,5 +1,9 @@
 import { wait, awaiter, nextTick } from "./utils";
-import { createRequest, createRequestResource } from "../request";
+import {
+  createRequest,
+  createRequestResource,
+  CacheStrategies,
+} from "../request";
 
 describe("request", () => {
   let request: ReturnType<typeof createRequest>;
@@ -28,53 +32,81 @@ describe("request", () => {
     expect(await request(get("1", "2", "3"))).toBe("yesyes123");
   });
 
-  it("should cache resources", async () => {
-    const createPromise = jest.fn((a: string) => Promise.resolve("yesyes" + a));
-    const get = createRequestResource(createPromise, {
-      cacheable: true,
-    });
-    const first = await request(get("1"));
-    const second = await request(get("1"));
-    expect(createPromise).toHaveBeenCalledTimes(1);
-    expect(first).toBe(second);
+  describe("for CacheFirst strategy", () => {
+    it("should cache resources", async () => {
+      const createPromise = jest.fn((a: string) =>
+        Promise.resolve("yesyes" + a)
+      );
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+      });
+      const first = await request(get("1"));
+      const second = await request(get("1"));
+      expect(createPromise).toHaveBeenCalledTimes(1);
+      expect(first).toBe(second);
 
-    const third = await request(get("2"));
-    expect(third).not.toBe(first);
-    expect(createPromise).toHaveBeenCalledTimes(2);
+      const third = await request(get("2"));
+      expect(third).not.toBe(first);
+      expect(createPromise).toHaveBeenCalledTimes(2);
+    });
+
+    it("should respect a time to life for cacheable resources", async () => {
+      const createPromise = jest.fn((a: string) =>
+        Promise.resolve("yesyes" + a)
+      );
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+        ttl: 100,
+      });
+      const first = await request(get("1"));
+      const second = await request(get("1"));
+      expect(first).toBe(second);
+      await wait(110);
+      const third = await request(get("1"));
+      expect(first).toBe(third);
+      expect(createPromise).toHaveBeenCalledTimes(2);
+    });
+
+    it("should not share cache of different resources", async () => {
+      const createPromise1 = jest.fn((a: string) =>
+        Promise.resolve("yesyes" + a)
+      );
+      const createPromise2 = jest.fn((a: string) =>
+        Promise.resolve("nono" + a)
+      );
+      const get1 = createRequestResource(createPromise1, {
+        cacheable: true,
+      });
+      const get2 = createRequestResource(createPromise2, {
+        cacheable: true,
+      });
+
+      const first = await request(get1("1"));
+      const second = await request(get2("1"));
+      expect(createPromise1).toHaveBeenCalledTimes(1);
+      expect(createPromise2).toHaveBeenCalledTimes(1);
+      expect(first).not.toBe(second);
+    });
   });
 
-  it("should respect a time to life for cacheable resources", async () => {
-    const createPromise = jest.fn((a: string) => Promise.resolve("yesyes" + a));
-    const get = createRequestResource(createPromise, {
-      cacheable: true,
-      ttl: 100,
-    });
-    const first = await request(get("1"));
-    const second = await request(get("1"));
-    expect(first).toBe(second);
-    await wait(110);
-    const third = await request(get("1"));
-    expect(first).toBe(third);
-    expect(createPromise).toHaveBeenCalledTimes(2);
-  });
+  describe("for NetworkOnly strategy", () => {
+    it("should not use cached resources", async () => {
+      const createPromise = jest.fn((a: string) =>
+        Promise.resolve("yesyes" + a)
+      );
+      const get = createRequestResource(createPromise, {
+        cacheable: true,
+        strategy: CacheStrategies.NetworkOnly,
+      });
+      const first = await request(get("1"));
+      const second = await request(get("1"));
+      expect(createPromise).toHaveBeenCalledTimes(2);
+      expect(first).toBe(second);
 
-  it("should not share cache of different resources", async () => {
-    const createPromise1 = jest.fn((a: string) =>
-      Promise.resolve("yesyes" + a)
-    );
-    const createPromise2 = jest.fn((a: string) => Promise.resolve("nono" + a));
-    const get1 = createRequestResource(createPromise1, {
-      cacheable: true,
+      const third = await request(get("2"));
+      expect(third).not.toBe(first);
+      expect(createPromise).toHaveBeenCalledTimes(3);
     });
-    const get2 = createRequestResource(createPromise2, {
-      cacheable: true,
-    });
-
-    const first = await request(get1("1"));
-    const second = await request(get2("1"));
-    expect(createPromise1).toHaveBeenCalledTimes(1);
-    expect(createPromise2).toHaveBeenCalledTimes(1);
-    expect(first).not.toBe(second);
   });
 
   describe("nested promise getter", () => {
