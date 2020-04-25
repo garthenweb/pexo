@@ -17,33 +17,71 @@ interface Resource<T, R> {
   strategy: CacheStrategies;
   generateCacheKey: (resourceId: string, inputs: any[]) => string;
   cacheable?: boolean;
+  bundleable?: boolean;
   ttl?: number;
 }
 
 interface RequestResourceConfig {
   cacheable?: boolean;
+  bundleable?: boolean;
   ttl?: number;
   strategy?: CacheStrategies;
   generateCacheKey?: (resourceId: string, inputs: any[]) => string;
 }
+
+type Method = "create" | "read" | "update" | "delete";
 
 type ResourceCall<T, R> = (input: T) => Promise<Resource<T, R>>;
 
 let lastResourceId = 0;
 export const createRequestResource = <T, R>(
   runTask: RunTask<T, R>,
-  config: RequestResourceConfig = {}
+  config?: RequestResourceConfig
 ): ResourceCall<T, R> => {
   const resourceId = (++lastResourceId).toString();
-  return async (...args: T[]) => ({
-    resourceId,
-    inputs: await Promise.all(args),
-    ttl: config.ttl,
-    cacheable: config.cacheable,
-    runTask,
-    strategy: config.strategy ?? CacheStrategies.CacheFirst,
-    generateCacheKey: config.generateCacheKey ?? generateRequestCacheKey,
+  const tasks = typeof runTask === "function" ? { read: runTask } : runTask;
+  const {
+    ttl,
+    cacheable,
+    bundleable,
+    strategy,
+    generateCacheKey,
+  } = Object.assign(
+    {
+      ttl: 0,
+      cacheable: false,
+      bundleable: true,
+      strategy: CacheStrategies.CacheFirst,
+    },
+    config
+  );
+
+  const createResourceMethod = (method: Method) => {
+    if (typeof tasks[method] !== "function") {
+      throw new Error(`Method \`${method}\` does not exist on this resource`);
+    }
+    return async (...args: T[]) => ({
+      resourceId,
+      inputs: await Promise.all(args),
+      ttl: method === "read" ? ttl : 0,
+      cacheable: method === "read" ? cacheable : false,
+      bundleable: method === "read" ? bundleable : false,
+      runTask: tasks[method],
+      strategy: method === "read" ? strategy : CacheStrategies.NetworkOnly,
+      generateCacheKey: generateCacheKey ?? generateRequestCacheKey,
+    });
+  };
+
+  const defaultTask =
+    typeof tasks.read === "function"
+      ? createResourceMethod("read")
+      : () => new Error("Read task does not exist for this resource");
+
+  Object.keys(tasks).forEach((method) => {
+    defaultTask[method] = createResourceMethod(method);
   });
+
+  return defaultTask;
 };
 
 interface CacheItem<T> {
@@ -184,7 +222,7 @@ const retrieveFromCache = async <T, R>(
 };
 
 const executeAndStoreInCache = async <T, R>(
-  { inputs, runTask }: Resource<T, R>,
+  { inputs, runTask, bundleable }: Resource<T, R>,
   cacheKey: string | null,
   { cache, pendingCache }: Config
 ) => {
@@ -192,16 +230,18 @@ const executeAndStoreInCache = async <T, R>(
     return runTask(...inputs);
   }
 
-  if (pendingCache.has(cacheKey)) {
+  if (bundleable && pendingCache.has(cacheKey)) {
     return pendingCache.get(cacheKey);
   }
 
   const request = runTask(...inputs);
 
-  pendingCache.set(cacheKey, {
-    createdAt: Date.now(),
-    value: request,
-  });
+  if (bundleable) {
+    pendingCache.set(cacheKey, {
+      createdAt: Date.now(),
+      value: request,
+    });
+  }
 
   return request
     .then((res) => {

@@ -33,6 +33,25 @@ describe("request", () => {
     expect(await request(get("1", "2", "3"))).toBe("yesyes123");
   });
 
+  it("should handle a simple promise using read method", async () => {
+    const get = createRequestResource(() => Promise.resolve("yesyes"));
+    const result = await request(get.read());
+    expect(result).toBe("yesyes");
+  });
+
+  it("should allow crud methods", async () => {
+    const resource = createRequestResource({
+      read: (id: string) => Promise.resolve({ id }),
+      create: (id: string) => Promise.resolve({ id }),
+      update: (id: string, next: { id: string }) => Promise.resolve(next),
+      delete: (id: string) => Promise.resolve({ id }),
+    });
+    expect(await request(resource.read(42))).toEqual({ id: 42 });
+    expect(await request(resource.create(43))).toEqual({ id: 43 });
+    expect(await request(resource.update(44, { id: 44 }))).toEqual({ id: 44 });
+    expect(await request(resource.delete(45))).toEqual({ id: 45 });
+  });
+
   describe("for CacheFirst strategy", () => {
     it("should cache resources", async () => {
       const createPromise = jest.fn((a: string) =>
