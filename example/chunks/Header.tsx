@@ -23,6 +23,7 @@ export const generateViewState = (): Promise<Props> => {
           { href: "/", title: "Homepage" },
           { href: "/page1", title: "Page1" },
           { href: "/page2", title: "Page2" },
+          { href: "/bookmarks", title: "Bookmarks" },
           { href: "/redirect", title: "Redirect" },
         ],
       });

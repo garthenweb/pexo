@@ -1,9 +1,11 @@
+import "isomorphic-fetch";
 import React from "react";
 import express from "express";
 import path from "path";
 import { createStreamMiddleware } from "../src/server";
 import App from "./app";
 import { createPluginStyledComponents } from "../src/plugins";
+import createApi from "./server.api";
 
 const expressApp = express();
 
@@ -32,6 +34,7 @@ if (process.env.NODE_ENV !== "production") {
   );
 }
 
+createApi(expressApp);
 expressApp.get(
   "*",
   createStreamMiddleware({

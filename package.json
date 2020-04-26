@@ -52,6 +52,7 @@
     "@types/styled-components": "^5.1.0",
     "@types/supertest": "^2.0.8",
     "express": "^4.17.1",
+    "isomorphic-fetch": "^2.2.1",
     "jest": "^25.4.0",
     "supertest": "^4.0.2",
     "typescript": "^3.8.3"
