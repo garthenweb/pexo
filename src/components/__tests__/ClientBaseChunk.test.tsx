@@ -196,7 +196,7 @@ describe("ClientBaseChunk", () => {
     it("should invalidate and rerender the view when a mutating action was fired", async () => {
       const name = String(performance.now());
       let readCallCount = 0;
-      const resource = createRequestResource({
+      const resource = createRequestResource("test_resource_name", {
         read: () => Promise.resolve(++readCallCount),
         update: () => Promise.resolve(),
       });

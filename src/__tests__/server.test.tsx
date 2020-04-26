@@ -276,8 +276,11 @@ describe("The server", () => {
               expect(viewStateCache.size).toBe(1);
               expect(generateViewState).toHaveBeenCalledTimes(1);
               expect(viewStateCache.values().next().value).toEqual({
-                foo: 42,
-                bar: 84,
+                viewState: {
+                  foo: 42,
+                  bar: 84,
+                },
+                resourceIds: [],
               });
               expect(res1.text).toBe(res2.text);
               done();

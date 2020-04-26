@@ -1,1 +1,7 @@
-export type ViewStateCache = Map<string, {}>
+export type ViewStateCache = Map<
+  string,
+  {
+    viewState: {};
+    resourceIds: string[];
+  }
+>;

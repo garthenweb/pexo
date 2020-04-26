@@ -39,10 +39,12 @@ type ResourceCall<T, R> = (input: T) => Promise<Resource<T, R>>;
 
 let lastResourceId = 0;
 export const createRequestResource = <T, R>(
+  resourceId: string,
   runTask: RunTask<T, R>,
   config?: RequestResourceConfig
 ): ResourceCall<T, R> => {
-  const resourceId = (++lastResourceId).toString();
+  const id =
+    typeof resourceId === "string" ? resourceId : (++lastResourceId).toString();
   const tasks = typeof runTask === "function" ? { read: runTask } : runTask;
   const {
     ttl,
@@ -65,7 +67,7 @@ export const createRequestResource = <T, R>(
       throw new Error(`Method \`${method}\` does not exist on this resource`);
     }
     return async (...args: T[]) => ({
-      resourceId,
+      resourceId: id,
       inputs: await Promise.all(args),
       ttl: method === "read" ? ttl : 0,
       cacheable: method === "read" ? cacheable : false,
@@ -140,7 +142,8 @@ export interface Request {
   removeResourceInvalidationChangeListener: (
     cb: (isInvalid: boolean) => void
   ) => void;
-  isInvalid: () => boolean;
+  isOneResourceInvalid: (ids: ResourceId[]) => boolean;
+  retrieveUsedResourceIds: () => ResourceId[];
 }
 
 const createInvalidResourceHandler = () => {
@@ -177,13 +180,6 @@ export const createRequest = ({
     usedResources.add(resourceId);
   };
 
-  const isRequestInvalid = () => {
-    return (
-      usedResources.size > 0 &&
-      [...usedResources].some((id) => invalidatedResources.has(id))
-    );
-  };
-
   const request: Request = <T, R>(
     resource: Promise<Resource<T, R>>
   ): Promise<R> => {
@@ -203,7 +199,10 @@ export const createRequest = ({
     invalidatedResources.onChange(cb);
   request.removeResourceInvalidationChangeListener = (cb: Function) =>
     invalidatedResources.removeOnChange(cb);
-  request.isInvalid = () => isRequestInvalid();
+  request.isOneResourceInvalid = (resourceIds: ResourceId[]) =>
+    resourceIds.length > 0 &&
+    [...resourceIds].some((id) => invalidatedResources.has(id));
+  request.retrieveUsedResourceIds = () => [...usedResources];
   return request;
 };
 
@@ -342,15 +341,20 @@ const executeAndStoreInCache = async <T, R>(
     });
 };
 
-export const useResourceInvalidator = (request: Request) => {
-  const [isInvalid, setIsInvalid] = useState(request.isInvalid());
+export const useResourceInvalidator = (
+  request: Request,
+  resourceIds?: string[]
+) => {
+  const [isInvalid, setIsInvalid] = useState(
+    request.isOneResourceInvalid(resourceIds ?? [])
+  );
   useEffect(() => {
     const update = () => {
-      setIsInvalid(request.isInvalid());
+      setIsInvalid(request.isOneResourceInvalid(resourceIds ?? []));
     };
     request.addResourceInvalidationChangeListener(update);
     return () => request.removeResourceInvalidationChangeListener(update);
-  }, [request]);
+  }, [request, resourceIds?.join(",")]);
 
   return isInvalid;
 };

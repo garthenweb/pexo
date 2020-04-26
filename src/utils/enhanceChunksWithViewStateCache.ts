@@ -16,16 +16,26 @@ export const enhanceChunksWithViewStateCache = (
       ...chunk,
       generateViewState: (props: any) => {
         if (chunk.chunkCacheKey && cache.has(chunk.chunkCacheKey)) {
-          return cache.get(chunk.chunkCacheKey);
+          return cache.get(chunk.chunkCacheKey)!.viewState;
         }
         if (chunk.generateViewState && chunk.chunkCacheKey) {
-          const viewState = chunk.generateViewState(props, utils);
+          const request = utils.request.clone();
+          const viewState = chunk.generateViewState(props, {
+            ...utils,
+            request,
+          });
           if (isSyncValue(viewState)) {
-            cache.set(chunk.chunkCacheKey, viewState);
+            cache.set(chunk.chunkCacheKey, {
+              viewState,
+              resourceIds: request.retrieveUsedResourceIds(),
+            });
             return viewState;
           }
           return Promise.resolve(viewState).then((res) => {
-            cache.set(chunk.chunkCacheKey!, res);
+            cache.set(chunk.chunkCacheKey!, {
+              viewState: res,
+              resourceIds: request.retrieveUsedResourceIds(),
+            });
             return res;
           });
         }

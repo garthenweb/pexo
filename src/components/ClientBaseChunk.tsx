@@ -116,29 +116,35 @@ const useViewState = ({
   isReady: boolean;
 }) => {
   const request = useRef(useRequest().clone());
-  const resourcesMightBeInvalid = useResourceInvalidator(request.current);
   const viewStateCache = useViewStateCacheMap();
   const lastChunkCacheKey = useRef<string | undefined>();
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
   const [data, setSyncViewState] = useState<{
     viewState: undefined | {};
+    resourceIds: undefined | string[];
     isFinal: boolean;
     isFailure: boolean;
     error: unknown;
   }>(
     viewStateCache.has(chunkCacheKey)
       ? {
-          viewState: viewStateCache.get(chunkCacheKey),
+          viewState: viewStateCache.get(chunkCacheKey)!.viewState,
+          resourceIds: viewStateCache.get(chunkCacheKey)!.resourceIds,
           isFinal: true,
           isFailure: false,
           error: undefined,
         }
       : {
           viewState: undefined,
+          resourceIds: undefined,
           isFinal: false,
           isFailure: false,
           error: undefined,
         }
+  );
+  const resourcesMightBeInvalid = useResourceInvalidator(
+    request.current,
+    data.resourceIds
   );
   const cacheKeyChanged =
     lastChunkCacheKey.current && lastChunkCacheKey.current !== chunkCacheKey;
@@ -162,6 +168,7 @@ const useViewState = ({
     if (!generateViewState) {
       setSyncViewState({
         viewState: {},
+        resourceIds: [],
         isFinal: true,
         isFailure: false,
         error: undefined,
@@ -174,17 +181,23 @@ const useViewState = ({
     const saveValue = ({
       viewState,
       isFinal,
+      resourceIds,
     }: {
       viewState: {};
       isFinal: boolean;
+      resourceIds: string[];
     }) => {
       const nextState = viewState || {};
       if (isFinal) {
-        viewStateCache.set(chunkCacheKey, nextState);
+        viewStateCache.set(chunkCacheKey, {
+          viewState: nextState,
+          resourceIds,
+        });
       }
       if (!canceled) {
         setSyncViewState({
           viewState: nextState,
+          resourceIds,
           isFinal,
           isFailure: false,
           error: undefined,
@@ -196,20 +209,28 @@ const useViewState = ({
     ensureAsync(generateViewState(delegateProps, { request: request.current }))
       .then(async (result) => {
         if (!isGeneratorValue(result)) {
-          saveValue({ viewState: result, isFinal: true });
+          const resourceIds = request.current.retrieveUsedResourceIds();
+          saveValue({ viewState: result, isFinal: true, resourceIds });
           return;
         }
         let finalValue = {};
         for await (const value of result) {
-          fireAsAct(() => saveValue({ viewState: value, isFinal: false }));
+          const resourceIds = request.current.retrieveUsedResourceIds();
+          fireAsAct(() =>
+            saveValue({ viewState: value, isFinal: false, resourceIds })
+          );
           finalValue = value;
         }
-        fireAsAct(() => saveValue({ viewState: finalValue, isFinal: true }));
+        const resourceIds = request.current.retrieveUsedResourceIds();
+        fireAsAct(() =>
+          saveValue({ viewState: finalValue, isFinal: true, resourceIds })
+        );
       })
       .catch((error) => {
         if (!canceled) {
           setSyncViewState({
             viewState: undefined,
+            resourceIds: [],
             error,
             isFailure: true,
             isFinal: true,

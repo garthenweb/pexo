@@ -13,13 +13,15 @@ describe("request", () => {
   });
 
   it("should handle a simple promise", async () => {
-    const get = createRequestResource(() => Promise.resolve("yesyes"));
+    const get = createRequestResource("test_resource_name", () =>
+      Promise.resolve("yesyes")
+    );
     const result = await request(get());
     expect(result).toBe("yesyes");
   });
 
   it("should allow to adjust promise result per request", async () => {
-    const get = createRequestResource((a: string) =>
+    const get = createRequestResource("test_resource_name", (a: string) =>
       Promise.resolve("yesyes" + a)
     );
     expect(await request(get("1"))).toBe("yesyes1");
@@ -27,20 +29,23 @@ describe("request", () => {
   });
 
   it("should allow more than one argument", async () => {
-    const get = createRequestResource((a: string, b: string, c: string) =>
-      Promise.resolve("yesyes" + a + b + c)
+    const get = createRequestResource(
+      "test_resource_name",
+      (a: string, b: string, c: string) => Promise.resolve("yesyes" + a + b + c)
     );
     expect(await request(get("1", "2", "3"))).toBe("yesyes123");
   });
 
   it("should handle a simple promise using read method", async () => {
-    const get = createRequestResource(() => Promise.resolve("yesyes"));
+    const get = createRequestResource("test_resource_name", () =>
+      Promise.resolve("yesyes")
+    );
     const result = await request(get.read());
     expect(result).toBe("yesyes");
   });
 
   it("should allow crud methods", async () => {
-    const resource = createRequestResource({
+    const resource = createRequestResource("test_resource_name", {
       read: (id: string) => Promise.resolve({ id }),
       create: (id: string) => Promise.resolve({ id }),
       update: (id: string, next: { id: string }) => Promise.resolve(next),
@@ -57,7 +62,7 @@ describe("request", () => {
       const createPromise = jest.fn((a: string) =>
         Promise.resolve("yesyes" + a)
       );
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
       });
       const first = await request(get("1"));
@@ -74,7 +79,7 @@ describe("request", () => {
       const createPromise = jest.fn((a: string) =>
         Promise.resolve("yesyes" + a)
       );
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
         ttl: 100,
       });
@@ -94,12 +99,20 @@ describe("request", () => {
       const createPromise2 = jest.fn((a: string) =>
         Promise.resolve("nono" + a)
       );
-      const get1 = createRequestResource(createPromise1, {
-        cacheable: true,
-      });
-      const get2 = createRequestResource(createPromise2, {
-        cacheable: true,
-      });
+      const get1 = createRequestResource(
+        "test_resource_name1",
+        createPromise1,
+        {
+          cacheable: true,
+        }
+      );
+      const get2 = createRequestResource(
+        "test_resource_name2",
+        createPromise2,
+        {
+          cacheable: true,
+        }
+      );
 
       const first = await request(get1("1"));
       const second = await request(get2("1"));
@@ -111,7 +124,7 @@ describe("request", () => {
     it("should bundle resources that start in parallel", async () => {
       const controller = awaiter();
       const createPromise = jest.fn((a: string) => controller.promise);
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
       });
       const p = Promise.all([request(get("1")), request(get("1"))]);
@@ -133,7 +146,7 @@ describe("request", () => {
         cache,
       });
       const createPromise = jest.fn((a: string) => Promise.resolve(a));
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
         strategy: CacheStrategies.CacheOnly,
         generateCacheKey: () => "1",
@@ -144,7 +157,7 @@ describe("request", () => {
 
     it("should fail if no cached resource was found", async () => {
       const createPromise = jest.fn((a: string) => Promise.resolve(a));
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
         strategy: CacheStrategies.CacheOnly,
         generateCacheKey: () => "1",
@@ -157,7 +170,7 @@ describe("request", () => {
   describe("for NetworkOnly strategy", () => {
     it("should not use cached resources", async () => {
       const createPromise = jest.fn((a: string) => Promise.resolve(a));
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
         strategy: CacheStrategies.NetworkOnly,
       });
@@ -175,7 +188,7 @@ describe("request", () => {
   describe("for NetworkOnly strategy", () => {
     it("should not use cached resources", async () => {
       const createPromise = jest.fn((a: string) => Promise.resolve(a));
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
         strategy: CacheStrategies.NetworkOnly,
       });
@@ -193,7 +206,7 @@ describe("request", () => {
   describe("for NetworkFirst strategy", () => {
     it("should not use cached resources", async () => {
       const createPromise = jest.fn((a: string) => Promise.resolve(a));
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
         strategy: CacheStrategies.NetworkFirst,
       });
@@ -214,7 +227,7 @@ describe("request", () => {
           return Promise.reject("Can only handle the first call");
         }
       });
-      const get = createRequestResource(createPromise, {
+      const get = createRequestResource("test_resource_name", createPromise, {
         cacheable: true,
         strategy: CacheStrategies.NetworkFirst,
       });
@@ -233,7 +246,9 @@ describe("request", () => {
   describe("nested promise getter", () => {
     it("should return getter which resolve with the value of the possible result", async () => {
       const obj = { id: 42, foo: { bar: { baz: 5 } } };
-      const get = createRequestResource(() => Promise.resolve(obj));
+      const get = createRequestResource("test_resource_name", () =>
+        Promise.resolve(obj)
+      );
 
       const result = request(get());
       expect(await result).toEqual(obj);
@@ -251,7 +266,9 @@ describe("request", () => {
 
     it("should should not be enumerable", async () => {
       const obj = { id: 42, foo: { bar: { baz: 5 } } };
-      const get = createRequestResource(() => Promise.resolve(obj));
+      const get = createRequestResource("test_resource_name", () =>
+        Promise.resolve(obj)
+      );
 
       const result = request(get());
       expect(Object.keys(result)).toEqual([]);
@@ -265,9 +282,12 @@ describe("request", () => {
       const get2Call = jest.fn(() => get2Await.promise);
       const dependsCall = jest.fn((id: number) => Promise.resolve(id + 5));
 
-      const get1 = createRequestResource(get1Call);
-      const get2 = createRequestResource(get2Call);
-      const getDependsOn1 = createRequestResource(dependsCall);
+      const get1 = createRequestResource("test_resource_name1", get1Call);
+      const get2 = createRequestResource("test_resource_name2", get2Call);
+      const getDependsOn1 = createRequestResource(
+        "test_resource_name3",
+        dependsCall
+      );
 
       expect(get1Call).not.toHaveBeenCalled();
       expect(get2Call).not.toHaveBeenCalled();

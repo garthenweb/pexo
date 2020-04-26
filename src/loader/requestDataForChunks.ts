@@ -10,19 +10,28 @@ export const requestDataForChunks = (
     (chunk) =>
       new Promise((resolve) => {
         if (chunk.generateViewState && !chunk.viewState) {
-          Promise.resolve(chunk.generateViewState(chunk.props, utils)).then(
-            async (viewState) => {
-              if (!isGeneratorValue(viewState)) {
-                resolve({ ...chunk, viewState });
-                return;
-              }
-              let lastValue;
-              for await (const value of viewState) {
-                lastValue = value;
-              }
-              resolve({ ...chunk, viewState: lastValue });
+          const request = utils.request.clone();
+          Promise.resolve(
+            chunk.generateViewState(chunk.props, { ...utils, request })
+          ).then(async (viewState) => {
+            if (!isGeneratorValue(viewState)) {
+              resolve({
+                ...chunk,
+                viewState,
+                resourceIds: request.retrieveUsedResourceIds(),
+              });
+              return;
             }
-          );
+            let lastValue;
+            for await (const value of viewState) {
+              lastValue = value;
+            }
+            resolve({
+              ...chunk,
+              viewState: lastValue,
+              resourceIds: request.retrieveUsedResourceIds(),
+            });
+          });
           return;
         }
 
