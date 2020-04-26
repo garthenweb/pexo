@@ -1,7 +1,9 @@
 import React from "react";
 import { render, cleanup, act, fireEvent } from "@testing-library/react";
 import ClientBaseChunk from "../ClientBaseChunk";
-import { awaiter } from "../../__tests__/utils";
+import { awaiter, wait, nextTick } from "../../__tests__/utils";
+import { createRequestResource } from "../../request";
+import { useRequest } from "../../context/ClientRequestContext";
 
 describe("ClientBaseChunk", () => {
   afterEach(() => {
@@ -188,5 +190,38 @@ describe("ClientBaseChunk", () => {
     );
     expect(await findByText("Chunk")).not.toBeNull();
     expect(generateViewState).toHaveBeenCalledTimes(1);
+  });
+
+  describe("if used with resources", () => {
+    it("should invalidate and rerender the view when a mutating action was fired", async () => {
+      const name = String(performance.now());
+      let readCallCount = 0;
+      const resource = createRequestResource({
+        read: () => Promise.resolve(++readCallCount),
+        update: () => Promise.resolve(),
+      });
+      const { findByText, getByText } = render(
+        <ClientBaseChunk
+          name={name}
+          loader={() => ({
+            View: ({ state }: { state: number }) => {
+              const request = useRequest();
+              return (
+                <div onClick={() => request(resource.update())}>{state}</div>
+              );
+            },
+            generateViewState: async (_, { request }) => {
+              return {
+                state: await request(resource()),
+              };
+            },
+          })}
+        />
+      );
+
+      expect(await findByText("1")).not.toBeNull();
+      fireEvent.click(getByText("1"));
+      expect(await findByText("2")).not.toBeNull();
+    });
   });
 });

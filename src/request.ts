@@ -1,4 +1,5 @@
 import { generateRequestCacheKey } from "./utils/cacheKey";
+import { useState, useEffect } from "react";
 
 type RunTask<T, R> = (...inputs: Array<T>) => Promise<R>;
 
@@ -10,14 +11,17 @@ export enum CacheStrategies {
   // StaleWhileRevalidate,
 }
 
+type ResourceId = string;
+
 interface Resource<T, R> {
   inputs: Array<T>;
-  resourceId: string;
+  resourceId: ResourceId;
   runTask: RunTask<T, R>;
   strategy: CacheStrategies;
-  generateCacheKey: (resourceId: string, inputs: any[]) => string;
+  generateCacheKey: (resourceId: ResourceId, inputs: any[]) => string;
   cacheable?: boolean;
   bundleable?: boolean;
+  mutates: boolean;
   ttl?: number;
 }
 
@@ -26,7 +30,7 @@ interface RequestResourceConfig {
   bundleable?: boolean;
   ttl?: number;
   strategy?: CacheStrategies;
-  generateCacheKey?: (resourceId: string, inputs: any[]) => string;
+  generateCacheKey?: (resourceId: ResourceId, inputs: any[]) => string;
 }
 
 type Method = "create" | "read" | "update" | "delete";
@@ -66,6 +70,7 @@ export const createRequestResource = <T, R>(
       ttl: method === "read" ? ttl : 0,
       cacheable: method === "read" ? cacheable : false,
       bundleable: method === "read" ? bundleable : false,
+      mutates: method !== "read",
       runTask: tasks[method],
       strategy: method === "read" ? strategy : CacheStrategies.NetworkOnly,
       generateCacheKey: generateCacheKey ?? generateRequestCacheKey,
@@ -118,23 +123,87 @@ export const createAsyncCache = (): AsyncCache => {
 interface Config {
   cache: AsyncCache;
   pendingCache: SyncCache;
+  invalidatedResources: ReturnType<typeof createInvalidResourceHandler>;
 }
 
-export type Request = <T = any, R = any>(
-  resource: Promise<Resource<T, R>>
-) => Promise<R>;
+interface ExecuteConfig extends Config {
+  registerResourceUsage: (resourceId: ResourceId) => void;
+}
+
+export interface Request {
+  <T = any, R = any>(resource: Promise<Resource<T, R>>): Promise<R>;
+  clone: () => Request;
+  reset: () => void;
+  addResourceInvalidationChangeListener: (
+    cb: (isInvalid: boolean) => void
+  ) => void;
+  removeResourceInvalidationChangeListener: (
+    cb: (isInvalid: boolean) => void
+  ) => void;
+  isInvalid: () => boolean;
+}
+
+const createInvalidResourceHandler = () => {
+  const invalidatedResources = new Set<ResourceId>();
+  const listeners = new Set<Function>();
+
+  const updateResourceValidationStatus = (
+    resourceId: ResourceId,
+    isValid: boolean
+  ) => {
+    if (isValid) {
+      invalidatedResources.delete(resourceId);
+    } else {
+      invalidatedResources.add(resourceId);
+    }
+    listeners.forEach((cb) => cb());
+  };
+
+  return {
+    has: invalidatedResources.has.bind(invalidatedResources),
+    updateResourceValidationStatus,
+    onChange: listeners.add.bind(listeners),
+    removeOnChange: listeners.delete.bind(listeners),
+  };
+};
 
 export const createRequest = ({
   cache = createAsyncCache(),
   pendingCache = new Map(),
+  invalidatedResources = createInvalidResourceHandler(),
 }: Partial<Config> = {}) => {
+  const usedResources = new Set<ResourceId>();
+  const registerResourceUsage = (resourceId: ResourceId) => {
+    usedResources.add(resourceId);
+  };
+
+  const isRequestInvalid = () => {
+    return (
+      usedResources.size > 0 &&
+      [...usedResources].some((id) => invalidatedResources.has(id))
+    );
+  };
+
   const request: Request = <T, R>(
     resource: Promise<Resource<T, R>>
   ): Promise<R> => {
     return createNestedPromise(
-      executeResource(resource, { cache, pendingCache })
+      executeResource(resource, {
+        cache,
+        pendingCache,
+        invalidatedResources,
+        registerResourceUsage,
+      })
     );
   };
+  request.clone = () =>
+    createRequest({ cache, pendingCache, invalidatedResources });
+  request.reset = () => usedResources.clear();
+  request.addResourceInvalidationChangeListener = (cb: Function) =>
+    invalidatedResources.onChange(cb);
+  request.removeResourceInvalidationChangeListener = (cb: Function) =>
+    invalidatedResources.removeOnChange(cb);
+  request.isInvalid = () => isRequestInvalid();
   return request;
 };
 
@@ -153,12 +222,14 @@ const createNestedPromise = <T>(p: Promise<T>): any => {
 
 const executeResource = async <T, R>(
   asyncResource: Promise<Resource<T, R>>,
-  config: Config
+  config: ExecuteConfig
 ) => {
   const resource = await asyncResource;
-  const cacheKey = resource.cacheable
-    ? resource.generateCacheKey(resource.resourceId, resource.inputs)
-    : null;
+  const cacheKey = resource.generateCacheKey(
+    resource.resourceId,
+    resource.inputs
+  );
+  config.registerResourceUsage(resource.resourceId);
 
   switch (resource.strategy) {
     case CacheStrategies.NetworkOnly: {
@@ -196,11 +267,15 @@ const executeResource = async <T, R>(
 };
 
 const retrieveFromCache = async <T, R>(
-  { ttl }: Resource<T, R>,
-  cacheKey: string | null,
-  { cache }: Config
+  { resourceId, ttl, cacheable }: Resource<T, R>,
+  cacheKey: string,
+  { cache, invalidatedResources }: ExecuteConfig
 ) => {
-  if (!cacheKey) {
+  if (!cacheable) {
+    return void 0;
+  }
+
+  if (invalidatedResources.has(resourceId)) {
     return void 0;
   }
 
@@ -222,14 +297,17 @@ const retrieveFromCache = async <T, R>(
 };
 
 const executeAndStoreInCache = async <T, R>(
-  { inputs, runTask, bundleable }: Resource<T, R>,
-  cacheKey: string | null,
-  { cache, pendingCache }: Config
+  {
+    resourceId,
+    inputs,
+    runTask,
+    bundleable,
+    cacheable,
+    mutates,
+  }: Resource<T, R>,
+  cacheKey: string,
+  { cache, pendingCache, invalidatedResources }: ExecuteConfig
 ) => {
-  if (!cacheKey) {
-    return runTask(...inputs);
-  }
-
   if (bundleable && pendingCache.has(cacheKey)) {
     return pendingCache.get(cacheKey);
   }
@@ -245,13 +323,34 @@ const executeAndStoreInCache = async <T, R>(
 
   return request
     .then((res) => {
-      cache.set(cacheKey, {
-        createdAt: Date.now(),
-        value: request,
-      });
+      if (cacheable) {
+        cache.set(cacheKey, {
+          createdAt: Date.now(),
+          value: request,
+        });
+      }
+      if (!mutates) {
+        invalidatedResources.updateResourceValidationStatus(resourceId, true);
+      }
       return res;
     })
     .finally(() => {
       pendingCache.delete(cacheKey);
+      if (mutates) {
+        invalidatedResources.updateResourceValidationStatus(resourceId, false);
+      }
     });
+};
+
+export const useResourceInvalidator = (request: Request) => {
+  const [isInvalid, setIsInvalid] = useState(request.isInvalid());
+  useEffect(() => {
+    const update = () => {
+      setIsInvalid(request.isInvalid());
+    };
+    request.addResourceInvalidationChangeListener(update);
+    return () => request.removeResourceInvalidationChangeListener(update);
+  }, [request]);
+
+  return isInvalid;
 };

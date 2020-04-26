@@ -11,6 +11,7 @@ import Redirect from "./Redirect";
 import { HeadConsumer } from "../context/ClientHeadContext";
 import { ensureAsync } from "../utils/ensureAsync";
 import { useRequest } from "../context/ClientRequestContext";
+import { useResourceInvalidator } from "../request";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -114,7 +115,8 @@ const useViewState = ({
   name: string;
   isReady: boolean;
 }) => {
-  const request = useRequest();
+  const request = useRef(useRequest().clone());
+  const resourcesMightBeInvalid = useResourceInvalidator(request.current);
   const viewStateCache = useViewStateCacheMap();
   const lastChunkCacheKey = useRef<string | undefined>();
   const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
@@ -141,7 +143,11 @@ const useViewState = ({
   const cacheKeyChanged =
     lastChunkCacheKey.current && lastChunkCacheKey.current !== chunkCacheKey;
   const shouldFetchData =
-    isReady && (!data.viewState || !data.isFinal || cacheKeyChanged);
+    isReady &&
+    (!data.viewState ||
+      !data.isFinal ||
+      cacheKeyChanged ||
+      resourcesMightBeInvalid);
   lastChunkCacheKey.current = chunkCacheKey;
 
   useEffect(() => {
@@ -186,7 +192,8 @@ const useViewState = ({
       }
     };
 
-    ensureAsync(generateViewState(delegateProps, { request }))
+    request.current.reset();
+    ensureAsync(generateViewState(delegateProps, { request: request.current }))
       .then(async (result) => {
         if (!isGeneratorValue(result)) {
           saveValue({ viewState: result, isFinal: true });

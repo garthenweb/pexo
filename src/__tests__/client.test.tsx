@@ -1,6 +1,8 @@
 import React from "react";
 import { TestingViewChunk } from "../components";
 import { createRendererWithComponent } from "./utils";
+import { createRequestResource } from "../request";
+import { useRequest } from "../context/ClientRequestContext";
 
 describe("The client", () => {
   let container: HTMLElement, clean: () => void;
