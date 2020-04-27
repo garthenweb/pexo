@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { useRequest } from "../../src/context/ClientRequestContext";
-import { userBookmarks, userBookmarkById } from "../resources/bookmarks";
+import { bookmarkResource } from "../resources/bookmarks";
 
 export const View = () => {
   const request = useRequest();
@@ -11,7 +11,7 @@ export const View = () => {
       <button
         onClick={() =>
           request(
-            userBookmarkById.create({
+            bookmarkResource.create({
               url: input.current.value,
             })
           )

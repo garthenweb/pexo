@@ -1,6 +1,6 @@
 import React from "react";
 import { useRequest } from "../../src/context/ClientRequestContext";
-import { userBookmarks, userBookmarkById } from "../resources/bookmarks";
+import { bookmarkResource } from "../resources/bookmarks";
 
 export const View = ({ bookmarks }) => {
   const request = useRequest();
@@ -9,7 +9,7 @@ export const View = ({ bookmarks }) => {
       {bookmarks.map((bookmark) => (
         <BookmarkItem
           key={bookmark.id}
-          onDelete={() => request(userBookmarkById.delete(bookmark.id))}
+          onDelete={() => request(bookmarkResource.delete(bookmark.id))}
           {...bookmark}
         />
       ))}
@@ -18,7 +18,7 @@ export const View = ({ bookmarks }) => {
 };
 
 export const generateViewState = async ({ userToken }, { request }) => {
-  const bookmarks = await request(userBookmarks(userToken));
+  const bookmarks = await request(bookmarkResource(userToken));
 
   return { bookmarks };
 };
