@@ -2,8 +2,8 @@ const path = require("path");
 const { sha1 } = require("object-hash");
 const ALLOWED_REACT_COMPONENTS = ["Chunk", "RedirectChunk", "HeadChunk"];
 
-// https://regex101.com/r/AM0c3m/1
-const REGEX_REMOVE_EXTENSION = /(?:(?:\/index)|(?:\/index)?\.(?:\w|\d)+)$/;
+// https://regex101.com/r/AM0c3m/2
+const REGEX_REMOVE_EXTENSION = /(?:(?:\/index)|(?:\/index)?\.(?:js|mjs|jsm|jsx|es6|cjs|ts|tsx)+)$/;
 
 const getCWDRelativeFilename = (filename) => {
   return path.relative(process.cwd(), filename);

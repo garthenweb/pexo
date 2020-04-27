@@ -5,8 +5,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true,
 });
 
-// https://regex101.com/r/AM0c3m/1
-const REGEX_REMOVE_EXTENSION = /(?:(?:\/index)|(?:\/index)?\.(?:\w|\d)+)$/;
+// https://regex101.com/r/AM0c3m/2
+const REGEX_REMOVE_EXTENSION = /(?:(?:\/index)|(?:\/index)?\.(?:js|mjs|jsm|jsx|es6|cjs|ts|tsx)+)$/;
 
 exports.default = new Reporter({
   async report({ event, options }) {
