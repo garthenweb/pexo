@@ -65,31 +65,29 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     const watchManifest = requestManifest({
       shouldWatch: process.env.NODE_ENV !== "production",
     });
-    const requestViewStateCache = viewStateCache ?? new Map();
+    const requestViewStateCache: ViewStateCache = viewStateCache ?? new Map();
     try {
       const createAppContext = (chunkNode: React.ReactNode) => (
         <StaticRouter location={req.url}>
           <PxGlobalServerProvider>{chunkNode}</PxGlobalServerProvider>
         </StaticRouter>
       );
-      let orderedChunks = renderStaticChunkTemplate({
+      const orderedChunks = renderStaticChunkTemplate({
         createApp,
         createAppContext,
         shouldRenderRoutesOnly: shouldRenderRoutesOnly
           ? "routes"
           : renderTemplate,
       });
-      orderedChunks = enhanceChunksWithViewStateCache(
-        requestViewStateCache,
-        orderedChunks,
-        { request }
-      );
+
       let headConfig = {};
       if (!disableServerSideRendering && !shouldRenderRoutesOnly) {
         try {
-          ({ headConfig } = await preloadBlockingChunks(orderedChunks, {
-            request,
-          }));
+          ({ headConfig } = await preloadBlockingChunks(
+            orderedChunks,
+            { request },
+            requestViewStateCache
+          ));
         } catch (throwable) {
           if (throwable instanceof Redirect) {
             res.redirect(throwable.status, throwable.pathname);
@@ -138,6 +136,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       const stream = renderToChunkStream({
         orderedChunks,
         createAppContext,
+        viewStateCache: requestViewStateCache,
         plugins,
         utils: { request },
       });
