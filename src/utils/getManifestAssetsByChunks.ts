@@ -40,21 +40,21 @@ export const getManifestAssetsByChunks = (
   const cssAssetLinks = [
     ...entryAssets.css.values(),
     ...chunkAssets.css.values(),
-  ].map((asset) => `<${asset}>; rel=preload; as=style`);
+  ].map((asset) => `</${asset}>; rel=preload; as=style`);
   const cssAssetTags = [
     ...entryAssets.css.values(),
     ...chunkAssets.css.values(),
-  ].map((asset) => `<link href="${asset}" rel="stylesheet" />`);
+  ].map((asset) => `<link href="/${asset}" rel="stylesheet" />`);
   const jsAssetLinks = [
     ...Array.from(entryAssets.js.values()).map(
-      (asset) => `<${asset}>; rel=preload; as=script`
+      (asset) => `</${asset}>; rel=preload; as=script`
     ),
     ...Array.from(chunkAssets.js.values()).map(
-      (asset) => `<${asset}>; rel=prefetch; as=script`
+      (asset) => `</${asset}>; rel=prefetch; as=script`
     ),
   ];
   const jsAssetTags = [...entryAssets.js.values()].map(
-    (asset) => `<script src="${asset}" async></script>`
+    (asset) => `<script src="/${asset}" async></script>`
   );
 
   return {
