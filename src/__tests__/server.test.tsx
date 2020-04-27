@@ -308,7 +308,7 @@ describe("The server", () => {
         .expect(200)
         .expect(
           "Link",
-          /<chunkname\-1\.tsx\.1234\.js>; rel=prefetch; as=script/
+          /<\/chunkname\-1\.tsx\.1234\.js>; rel=prefetch; as=script/
         )
         .expect(() => {
           expect(logger.error).not.toHaveBeenCalled();
