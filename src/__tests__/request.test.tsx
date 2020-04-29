@@ -4,6 +4,7 @@ import {
   createRequestResource,
   CacheStrategies,
   createAsyncCache,
+  retrieve,
 } from "../request";
 
 describe("request", () => {
@@ -311,6 +312,51 @@ describe("request", () => {
       expect(await pGet1).toEqual({ id: 42 });
       expect(await pGet2).toEqual({ id: 43 });
       expect(await pGetDependsOn1).toEqual(47);
+    });
+  });
+
+  describe("advanced data manipulation", () => {
+    describe("with retrieve", () => {
+      it("should allow to reuse cached values to optimize data fetching", async () => {
+        const productList = [
+          { id: 1, name: "product1" },
+          { id: 2, name: "product2" },
+          { id: 3, name: "product3" },
+        ];
+        const resolveList = jest.fn(() => Promise.resolve([...productList]));
+        const resolveOne = jest.fn((id: number) =>
+          Promise.resolve({ id: id, name: `product${id}` })
+        );
+        const products = createRequestResource(
+          "test_resource_name",
+          function* (id?: number) {
+            if (typeof id === "number") {
+              const list = yield retrieve(products());
+              const item = list?.find((item) => item.id === id);
+              return item ?? resolveOne(id);
+            }
+            return resolveList();
+          },
+          {
+            ttl: 1000,
+            cacheable: true,
+          }
+        );
+
+        expect(await request(products(1))).toEqual({ id: 1, name: "product1" });
+        expect(await request(products())).toEqual(productList);
+        expect(resolveOne).toHaveBeenCalledTimes(1);
+        expect(resolveList).toHaveBeenCalledTimes(1);
+
+        expect(await request(products(1))).toEqual({ id: 1, name: "product1" });
+        expect(await request(products(2))).toEqual({ id: 2, name: "product2" });
+        expect(await request(products(3))).toEqual({ id: 3, name: "product3" });
+        expect(resolveOne).toHaveBeenCalledTimes(1);
+        expect(resolveList).toHaveBeenCalledTimes(1);
+
+        expect(await request(products(4))).toEqual({ id: 4, name: "product4" });
+        expect(resolveOne).toHaveBeenCalledTimes(2);
+      });
     });
   });
 });

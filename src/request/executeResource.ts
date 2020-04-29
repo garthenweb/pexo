@@ -1,4 +1,6 @@
 import { ExecuteConfig, Resource } from "./types";
+import { isGeneratorValue } from "../utils/isGeneratorValue";
+import { Enhancer } from "./resourceEnhancer";
 
 export enum CacheStrategies {
   CacheFirst,
@@ -10,9 +12,10 @@ export enum CacheStrategies {
 
 export const executeResource = async <T, R>(
   asyncResource: Promise<Resource<T, R>>,
-  config: ExecuteConfig
+  config: ExecuteConfig,
+  resourceOverrides?: Partial<Resource<any, any>>
 ) => {
-  const resource = await asyncResource;
+  const resource = { ...(await asyncResource), ...resourceOverrides };
   const cacheKey = resource.generateCacheKey(
     resource.resourceId,
     resource.inputs
@@ -94,13 +97,14 @@ const executeAndStoreInCache = async <T, R>(
     mutates,
   }: Resource<T, R>,
   cacheKey: string,
-  { cache, pendingCache, invalidatedResources }: ExecuteConfig
+  config: ExecuteConfig
 ) => {
+  const { cache, pendingCache, invalidatedResources } = config;
   if (bundleable && pendingCache.has(cacheKey)) {
     return pendingCache.get(cacheKey);
   }
 
-  const request = runTask(...inputs);
+  const request = taskRunner(runTask(...inputs), config);
 
   if (bundleable) {
     pendingCache.set(cacheKey, {
@@ -128,4 +132,35 @@ const executeAndStoreInCache = async <T, R>(
         invalidatedResources.updateResourceValidationStatus(resourceId, false);
       }
     });
+};
+
+const taskRunner = async (
+  request: Promise<any> | GeneratorFunction,
+  config: ExecuteConfig
+) => {
+  if (!isGeneratorValue(request)) {
+    return request;
+  }
+
+  let { value, done } = request.next();
+  while (!done) {
+    if (done) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      let result;
+      const [enhancedResource, enhancer] = value;
+      if (enhancer === Enhancer.RETRIEVE) {
+        result = await executeResource(enhancedResource, config, {
+          strategy: CacheStrategies.CacheOnly,
+        }).catch(() => undefined);
+      } else {
+        throw new Error("Unknown resource enhancer");
+      }
+
+      ({ value, done } = request.next(result));
+    }
+  }
+
+  return value;
 };
