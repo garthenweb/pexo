@@ -28,7 +28,7 @@ export const createRequest = ({
         pendingCache,
         invalidatedResources,
         registerResourceUsage,
-      })
+      }).then(({ result }) => result)
     );
   };
   request.clone = () =>
