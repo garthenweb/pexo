@@ -6,9 +6,9 @@ export const View = ({ bookmarks }) => {
   const request = useRequest();
   return (
     <ul>
-      {bookmarks.map((bookmark) => (
+      {bookmarks.map((bookmark, index) => (
         <BookmarkItem
-          key={bookmark.id}
+          key={index}
           onDelete={() => request(bookmarkResource.delete(bookmark.id))}
           {...bookmark}
         />
@@ -17,8 +17,8 @@ export const View = ({ bookmarks }) => {
   );
 };
 
-export const generateViewState = async ({ userToken }, { request }) => {
-  const bookmarks = await request(bookmarkResource(userToken));
+export const generateViewState = async (_, { request }) => {
+  const bookmarks = await request(bookmarkResource());
 
   return { bookmarks };
 };
