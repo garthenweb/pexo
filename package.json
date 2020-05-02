@@ -6,7 +6,7 @@
     "test": "jest",
     "prebuild:cli": "rm -rf dist",
     "build:cli": "parcel build --target cli --no-cache --no-minify ./src/cli/cli.ts",
-    "cli": "npm run build:cli && chmod +x ./dist/cli/cli.js && ./dist/cli/cli.js",
+    "cli": "npm run build:cli && chmod +x ./dist/cli.js && ./dist/cli.js",
     "start:example": " npm run cli -- develop --server-entry ./example/server.tsx --client-entry ./example/client.tsx"
   },
   "targets": {
