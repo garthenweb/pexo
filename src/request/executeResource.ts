@@ -100,8 +100,8 @@ const executeAndStoreInCache = async <T, R>(
   const { resourceId, inputs, runTask, bundleable, mutates } = resource;
   const { pendingCache, resourceState } = config;
   if (bundleable && pendingCache.has(cacheKey)) {
-    const { result } = await pendingCache.get(cacheKey);
-    return result;
+    const { value } = pendingCache.get(cacheKey)!;
+    return value.then(({ result }) => result);
   }
 
   const request = taskRunner(runTask(...inputs), config);

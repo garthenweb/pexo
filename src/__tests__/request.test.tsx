@@ -130,10 +130,12 @@ describe("request", () => {
         cacheable: true,
       });
       const p = Promise.all([request(get("1")), request(get("1"))]);
-      controller.resolve();
+      controller.resolve(42);
       await nextTick();
-      await p;
+      const [first, second] = await p;
       expect(createPromise).toHaveBeenCalledTimes(1);
+      expect(first).toBe(42);
+      expect(second).toBe(42);
     });
   });
 
