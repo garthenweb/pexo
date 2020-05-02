@@ -247,6 +247,37 @@ describe("request", () => {
     });
   });
 
+  describe("for StaleWhileRevalidate strategy", () => {
+    it("should used cached resource but update it in background if outdated", async () => {
+      const read = jest.fn(() => wait(50).then(() => Date.now()));
+      const get = createRequestResource("test_resource_name", read, {
+        cacheable: true,
+        ttl: 100,
+        strategy: CacheStrategies.StaleWhileRevalidate,
+      });
+
+      const first = request(get());
+      const second = request(get());
+      expect(await first).toBeGreaterThan(0);
+      expect(await second).toBeGreaterThan(0);
+      expect(await first).toBe(await second);
+      expect(read).toHaveBeenCalledTimes(1);
+
+      await wait(150);
+
+      const third = await request(get());
+      expect(third).toBeGreaterThan(0);
+      expect(third).toBe(await first);
+      expect(read).toHaveBeenCalledTimes(2);
+
+      await wait(150);
+
+      const fourth = await request(get());
+      expect(fourth).toBeGreaterThan(0);
+      expect(fourth).not.toBe(await first);
+    });
+  });
+
   describe("nested promise getter", () => {
     it("should return getter which resolve with the value of the possible result", async () => {
       const obj = { id: 42, foo: { bar: { baz: 5 } } };

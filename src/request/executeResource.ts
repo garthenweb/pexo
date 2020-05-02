@@ -7,7 +7,7 @@ export enum CacheStrategies {
   NetworkOnly,
   NetworkFirst,
   CacheOnly,
-  // StaleWhileRevalidate,
+  StaleWhileRevalidate,
 }
 
 export const executeResource = async <T, R>(
@@ -54,6 +54,21 @@ export const executeResource = async <T, R>(
       result = cached ?? executeAndStoreInCache(resource, cacheKey, config);
       break;
     }
+    case CacheStrategies.StaleWhileRevalidate: {
+      const req = executeAndStoreInCache(resource, cacheKey, config);
+      const cached = await retrieveFromCache(resource, cacheKey, config, {
+        allowStale: true,
+      });
+      if (cached) {
+        result = cached;
+        req.catch(() =>
+          console.warn("Request for revalidation failed in background")
+        );
+      } else {
+        result = req;
+      }
+      break;
+    }
     default: {
       throw new Error(
         "Unknown cache strategy used. Choose one of CacheFirst, CacheOnly, NetworkFirst and NetworkOnly."
@@ -66,21 +81,24 @@ export const executeResource = async <T, R>(
 const retrieveFromCache = async <T, R>(
   { resourceId, ttl, cacheable }: Resource<T, R>,
   cacheKey: string,
-  { cache, resourceState }: ExecuteConfig
+  { cache, resourceState }: ExecuteConfig,
+  options?: { allowStale: boolean }
 ) => {
+  const { allowStale } = Object.assign({}, options);
   if (!cacheable) {
     return void 0;
   }
 
-  if (resourceState.isInvalid(resourceId)) {
+  if (resourceState.isInvalid(resourceId) && !allowStale) {
     return void 0;
   }
+
   const item = await cache.get(cacheKey);
   if (!item) {
     return void 0;
   }
 
-  if (!ttl) {
+  if (allowStale || !ttl) {
     return item.value;
   }
 
