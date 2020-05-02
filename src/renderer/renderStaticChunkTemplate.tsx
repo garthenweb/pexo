@@ -17,6 +17,7 @@ export interface ChunkTemplate extends Partial<RegistryItem<any, any>> {
   nextTemplateChunk: string;
   viewState?: any;
   resourceIds?: string[];
+  updatedAt?: number;
 }
 
 export const renderStaticChunkTemplate = ({

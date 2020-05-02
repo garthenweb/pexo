@@ -377,7 +377,7 @@ describe("request", () => {
             read: () => resolveList(),
             create: async function* (id: number) {
               const item = await createOne(id);
-              yield apply(products.read(), (list) => list.push(item));
+              yield apply(products(), (list) => [...list, item]);
               return item;
             },
           },

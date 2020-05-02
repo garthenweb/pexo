@@ -26,6 +26,7 @@ export const requestDataForChunks = (
               ...chunk,
               viewState,
               resourceIds: request.retrieveUsedResourceIds(),
+              updatedAt: Date.now(),
             });
             return;
           }
@@ -37,6 +38,7 @@ export const requestDataForChunks = (
             ...chunk,
             viewState: lastValue,
             resourceIds: request.retrieveUsedResourceIds(),
+            updatedAt: Date.now(),
           });
         });
         return;
@@ -48,6 +50,7 @@ export const requestDataForChunks = (
         cache.set(chunk.chunkCacheKey, {
           viewState: chunk.viewState,
           resourceIds: chunk.resourceIds || [],
+          updatedAt: chunk.updatedAt || Date.now(),
         });
       }
       return chunk;

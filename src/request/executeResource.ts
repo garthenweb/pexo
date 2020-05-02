@@ -64,14 +64,17 @@ export const executeResource = async <T, R>(
 };
 
 const retrieveFromCache = async <T, R>(
-  { ttl, cacheable }: Resource<T, R>,
+  { resourceId, ttl, cacheable }: Resource<T, R>,
   cacheKey: string,
-  { cache }: ExecuteConfig
+  { cache, resourceState }: ExecuteConfig
 ) => {
   if (!cacheable) {
     return void 0;
   }
 
+  if (resourceState.isInvalid(resourceId)) {
+    return void 0;
+  }
   const item = await cache.get(cacheKey);
   if (!item) {
     return void 0;
@@ -95,7 +98,7 @@ const executeAndStoreInCache = async <T, R>(
   config: ExecuteConfig
 ) => {
   const { resourceId, inputs, runTask, bundleable, mutates } = resource;
-  const { pendingCache, invalidatedResources } = config;
+  const { pendingCache, resourceState } = config;
   if (bundleable && pendingCache.has(cacheKey)) {
     const { result } = await pendingCache.get(cacheKey);
     return result;
@@ -111,36 +114,34 @@ const executeAndStoreInCache = async <T, R>(
   }
 
   try {
-    const { result, disableInvalidation } = await request;
-    await updateCache(result, resource, cacheKey, config);
+    const { result, updatesApplied } = await request;
     pendingCache.delete(cacheKey);
-    if (mutates && !disableInvalidation) {
-      invalidatedResources.updateResourceValidationStatus(resourceId, false);
+    await updateCache(result, resource, cacheKey, config);
+    if (mutates && !updatesApplied) {
+      resourceState.update(resourceId, { invalidate: true });
     }
     return result;
   } catch (error) {
     pendingCache.delete(cacheKey);
     if (mutates) {
-      invalidatedResources.updateResourceValidationStatus(resourceId, false);
+      resourceState.update(resourceId, { invalidate: true });
     }
     throw error;
   }
 };
 
 const updateCache = async <T, R>(
-  nextValue: any,
-  { cacheable, mutates, resourceId }: Resource<T, R>,
+  nextValue: unknown,
+  { cacheable, resourceId }: Resource<T, R>,
   cacheKey: string,
-  { cache, invalidatedResources }: ExecuteConfig
+  { cache, resourceState }: ExecuteConfig
 ) => {
   if (cacheable) {
     cache.set(cacheKey, {
       createdAt: Date.now(),
       value: nextValue,
     });
-  }
-  if (!mutates) {
-    invalidatedResources.updateResourceValidationStatus(resourceId, true);
+    resourceState.update(resourceId, { invalidate: false });
   }
 };
 
@@ -148,12 +149,12 @@ const taskRunner = async (
   request: Promise<any> | GeneratorFunction,
   config: ExecuteConfig
 ) => {
+  let updatesApplied = false;
   if (!isGeneratorValue(request)) {
-    return request.then((result) => ({ result, disableInvalidation: false }));
+    return request.then((result) => ({ result, updatesApplied }));
   }
 
   let { value, done } = await request.next();
-  let disableInvalidation = false;
   while (!done) {
     if (done) {
       return value;
@@ -162,18 +163,25 @@ const taskRunner = async (
       let result;
       switch (value[0]) {
         case Enhancer.RETRIEVE: {
-          result = await retrieveCachedResource(value[1], config);
+          ({ result } = await retrieveCachedResource(value[1], config));
           break;
         }
         case Enhancer.APPLY: {
           const [, enhancedResource, transform] = value;
-          const cacheResult = await retrieveCachedResource(
-            enhancedResource,
-            config
-          );
-          const { cacheKey, result: nextResult } = transform(cacheResult);
-          result = updateCache(nextResult, enhancedResource, cacheKey, config);
-          disableInvalidation = true;
+          const {
+            cacheKey,
+            result: cacheResult,
+          } = await retrieveCachedResource(enhancedResource, config);
+          if (cacheResult !== undefined && cacheKey) {
+            const nextResult = transform(cacheResult);
+            result = updateCache(
+              nextResult,
+              await enhancedResource,
+              cacheKey,
+              config
+            );
+            updatesApplied = true;
+          }
           break;
         }
       }
@@ -182,7 +190,7 @@ const taskRunner = async (
     }
   }
 
-  return { result: value, disableInvalidation };
+  return { result: value, updatesApplied };
 };
 
 const retrieveCachedResource = async (
@@ -192,8 +200,9 @@ const retrieveCachedResource = async (
   try {
     return await executeResource(enhancedResource, config, {
       strategy: CacheStrategies.CacheOnly,
-    }).then(({ result }) => result);
+    });
   } catch {
-    return undefined;
+    // TODO return cache key from error object
+    return { result: undefined, cacheKey: undefined };
   }
 };

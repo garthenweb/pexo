@@ -3,5 +3,6 @@ export type ViewStateCache = Map<
   {
     viewState: {};
     resourceIds: string[];
+    updatedAt: number;
   }
 >;

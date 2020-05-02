@@ -24,7 +24,7 @@ export interface CacheItem<T> {
 export interface Config {
   cache: AsyncCache;
   pendingCache: SyncCache;
-  invalidatedResources: InvalidResourceHandler;
+  resourceState: ResourceStatusHandler;
 }
 
 export interface ExecuteConfig extends Config {
@@ -35,14 +35,12 @@ export interface Request {
   <T = any, R = any>(resource: Promise<Resource<T, R>>): Promise<R>;
   clone: () => Request;
   reset: () => void;
-  addResourceInvalidationChangeListener: (
-    cb: (isInvalid: boolean) => void
+  addResourceUpdatedListener: (cb: (updatedResourceId: string) => void) => void;
+  removeResourceUpdatedListener: (
+    cb: (updatedResourceId: string) => void
   ) => void;
-  removeResourceInvalidationChangeListener: (
-    cb: (isInvalid: boolean) => void
-  ) => void;
-  isOneResourceInvalid: (ids: ResourceId[]) => boolean;
-  retrieveUsedResourceIds: () => ResourceId[];
+  getUpdateAtForResourceIds: (ids: ResourceId[]) => (number | undefined)[];
+  retrieveUsedResourceIds: () => string[];
 }
 
 export interface AsyncCache {
@@ -58,12 +56,12 @@ export interface SyncCache {
   delete: (key: string) => void;
 }
 
-export interface InvalidResourceHandler {
-  has: (resourceId: ResourceId) => boolean;
-  updateResourceValidationStatus: (
-    resourceId: string,
-    isValid: boolean
-  ) => void;
+export interface ResourceStatusHandler {
+  isInvalid: (resourceId: ResourceId) => boolean;
+  update: (resourceId: string, config: { invalidate: boolean }) => void;
   onChange: (cb: Function) => void;
   removeOnChange: (cb: Function) => void;
+  getUpdateAtForResourceIds: (
+    resourceIds: ResourceId[]
+  ) => (number | undefined)[];
 }

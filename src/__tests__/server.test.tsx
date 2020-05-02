@@ -275,13 +275,13 @@ describe("The server", () => {
               expect(logger.error).not.toHaveBeenCalled();
               expect(viewStateCache.size).toBe(1);
               expect(generateViewState).toHaveBeenCalledTimes(1);
-              expect(viewStateCache.values().next().value).toEqual({
-                viewState: {
-                  foo: 42,
-                  bar: 84,
-                },
-                resourceIds: [],
+              const nextValue = viewStateCache.values().next().value;
+              expect(nextValue.viewState).toEqual({
+                foo: 42,
+                bar: 84,
               });
+              expect(nextValue.resourceIds).toEqual([]);
+              expect(nextValue.updatedAt).toBeDefined();
               expect(res1.text).toBe(res2.text);
               done();
             });

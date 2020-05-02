@@ -11,7 +11,7 @@ import Redirect from "./Redirect";
 import { HeadConsumer } from "../context/ClientHeadContext";
 import { ensureAsync } from "../utils/ensureAsync";
 import { useRequest } from "../context/ClientRequestContext";
-import { useResourceInvalidator } from "../request";
+import { useResourceOutdated } from "../request";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   name,
@@ -122,6 +122,7 @@ const useViewState = ({
   const [data, setSyncViewState] = useState<{
     viewState: undefined | {};
     resourceIds: undefined | string[];
+    updatedAt: undefined | number;
     isFinal: boolean;
     isFailure: boolean;
     error: unknown;
@@ -130,6 +131,7 @@ const useViewState = ({
       ? {
           viewState: viewStateCache.get(chunkCacheKey)!.viewState,
           resourceIds: viewStateCache.get(chunkCacheKey)!.resourceIds,
+          updatedAt: viewStateCache.get(chunkCacheKey)!.updatedAt,
           isFinal: true,
           isFailure: false,
           error: undefined,
@@ -137,14 +139,16 @@ const useViewState = ({
       : {
           viewState: undefined,
           resourceIds: undefined,
+          updatedAt: undefined,
           isFinal: false,
           isFailure: false,
           error: undefined,
         }
   );
-  const resourcesMightBeInvalid = useResourceInvalidator(
+  const resourcesAreOutdated = useResourceOutdated(
     request.current,
-    data.resourceIds
+    data.resourceIds || [],
+    data.updatedAt
   );
   const cacheKeyChanged =
     lastChunkCacheKey.current && lastChunkCacheKey.current !== chunkCacheKey;
@@ -153,7 +157,7 @@ const useViewState = ({
     (!data.viewState ||
       !data.isFinal ||
       cacheKeyChanged ||
-      resourcesMightBeInvalid);
+      resourcesAreOutdated);
   lastChunkCacheKey.current = chunkCacheKey;
 
   useEffect(() => {
@@ -169,6 +173,7 @@ const useViewState = ({
       setSyncViewState({
         viewState: {},
         resourceIds: [],
+        updatedAt: Date.now(),
         isFinal: true,
         isFailure: false,
         error: undefined,
@@ -188,16 +193,19 @@ const useViewState = ({
       resourceIds: string[];
     }) => {
       const nextState = viewState || {};
+      const updatedAt = Date.now();
       if (isFinal) {
         viewStateCache.set(chunkCacheKey, {
           viewState: nextState,
           resourceIds,
+          updatedAt,
         });
       }
       if (!canceled) {
         setSyncViewState({
           viewState: nextState,
           resourceIds,
+          updatedAt,
           isFinal,
           isFailure: false,
           error: undefined,
@@ -231,6 +239,7 @@ const useViewState = ({
           setSyncViewState({
             viewState: undefined,
             resourceIds: [],
+            updatedAt: Date.now(),
             error,
             isFailure: true,
             isFinal: true,

@@ -76,6 +76,7 @@ const createServerActions = (keys: string[]) => {
 const generateChunkNodes = (chunk: ChunkTemplate) => {
   const resolvedViewState = chunk.viewState ?? {};
   const resourceIds = chunk.resourceIds ?? [];
+  const updatedAt = chunk.updatedAt ?? Date.now();
   const actions = chunk.actionKeys && createServerActions(chunk.actionKeys);
   const chunkNode = chunk.View ? (
     <chunk.View key={1} {...resolvedViewState} actions={actions} />
@@ -89,7 +90,8 @@ const generateChunkNodes = (chunk: ChunkTemplate) => {
       dangerouslySetInnerHTML={{
         __html: JSON.stringify({
           viewState: resolvedViewState,
-          resourceIds: resourceIds,
+          resourceIds,
+          updatedAt,
         }),
       }}
     />

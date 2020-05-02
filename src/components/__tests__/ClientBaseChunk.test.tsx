@@ -1,8 +1,8 @@
 import React from "react";
 import { render, cleanup, act, fireEvent } from "@testing-library/react";
 import ClientBaseChunk from "../ClientBaseChunk";
-import { awaiter, wait, nextTick } from "../../__tests__/utils";
-import { createRequestResource } from "../../request";
+import { awaiter } from "../../__tests__/utils";
+import { createRequestResource, apply } from "../../request";
 import { useRequest } from "../../context/ClientRequestContext";
 
 describe("ClientBaseChunk", () => {
@@ -222,6 +222,52 @@ describe("ClientBaseChunk", () => {
       expect(await findByText("1")).not.toBeNull();
       fireEvent.click(getByText("1"));
       expect(await findByText("2")).not.toBeNull();
+    });
+    it("should rerender if resource was mutated but the update was handled", async () => {
+      const name = String(performance.now());
+      let readCallCount = 0;
+      const read = jest.fn(() => Promise.resolve(++readCallCount));
+      const resource = createRequestResource(
+        "test_resource_name",
+        {
+          read,
+          update: async function* () {
+            await Promise.resolve();
+            yield apply(resource(), (prev: number) => prev + 1);
+          },
+        },
+        {
+          cacheable: true,
+          ttl: 10000,
+        }
+      );
+      const { findByText, getByText } = render(
+        <ClientBaseChunk
+          name={name}
+          loader={() => ({
+            View: ({ state }: { state: number }) => {
+              const request = useRequest();
+              return (
+                <div onClick={() => request(resource.update())}>{state}</div>
+              );
+            },
+            generateViewState: async (_, { request }) => {
+              return {
+                state: await request(resource()),
+              };
+            },
+          })}
+        />
+      );
+
+      expect(await findByText("1")).not.toBeNull();
+      expect(read).toHaveBeenCalledTimes(1);
+      fireEvent.click(getByText("1"));
+      expect(await findByText("2")).not.toBeNull();
+      expect(read).toHaveBeenCalledTimes(1);
+      fireEvent.click(getByText("2"));
+      expect(await findByText("3")).not.toBeNull();
+      expect(read).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -1,6 +1,6 @@
 export { createRequest } from "./request/createRequest";
 export { createRequestResource } from "./request/createRequestResource";
-export { useResourceInvalidator } from "./request/useResourceInvalidator";
+export { useResourceOutdated } from "./request/useResourceOutdated";
 export { CacheStrategies } from "./request/executeResource";
 export { createAsyncCache } from "./request/caches";
 export { retrieve, apply } from "./request/resourceEnhancer";

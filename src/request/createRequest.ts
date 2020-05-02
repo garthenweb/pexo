@@ -3,7 +3,7 @@ import {
   ResourceId,
   Resource,
   Request,
-  InvalidResourceHandler,
+  ResourceStatusHandler,
 } from "./types";
 import { executeResource } from "./executeResource";
 import { createAsyncCache } from "./caches";
@@ -12,7 +12,7 @@ import { createNestedPromise } from "./createNestedPromise";
 export const createRequest = ({
   cache = createAsyncCache(),
   pendingCache = new Map(),
-  invalidatedResources = createInvalidResourceHandler(),
+  resourceState = createResourceStatusHandler(),
 }: Partial<Config> = {}) => {
   const usedResources = new Set<ResourceId>();
   const registerResourceUsage = (resourceId: ResourceId) => {
@@ -26,45 +26,51 @@ export const createRequest = ({
       executeResource(resource, {
         cache,
         pendingCache,
-        invalidatedResources,
+        resourceState,
         registerResourceUsage,
       }).then(({ result }) => result)
     );
   };
-  request.clone = () =>
-    createRequest({ cache, pendingCache, invalidatedResources });
+  request.clone = () => createRequest({ cache, pendingCache, resourceState });
   request.reset = () => usedResources.clear();
-  request.addResourceInvalidationChangeListener = (cb: Function) =>
-    invalidatedResources.onChange(cb);
-  request.removeResourceInvalidationChangeListener = (cb: Function) =>
-    invalidatedResources.removeOnChange(cb);
-  request.isOneResourceInvalid = (resourceIds: ResourceId[]) =>
-    resourceIds.length > 0 &&
-    [...resourceIds].some((id) => invalidatedResources.has(id));
+  request.addResourceUpdatedListener = (cb: Function) =>
+    resourceState.onChange(cb);
+  request.removeResourceUpdatedListener = (cb: Function) =>
+    resourceState.removeOnChange(cb);
+  request.getUpdateAtForResourceIds = (resourceIds: ResourceId[]) =>
+    resourceState.getUpdateAtForResourceIds(resourceIds);
   request.retrieveUsedResourceIds = () => [...usedResources];
   return request;
 };
 
-const createInvalidResourceHandler = (): InvalidResourceHandler => {
+const createResourceStatusHandler = (): ResourceStatusHandler => {
+  const updatedAt = new Map<ResourceId, number>();
   const invalidatedResources = new Set<ResourceId>();
   const listeners = new Set<Function>();
 
-  const updateResourceValidationStatus = (
+  const update = (
     resourceId: ResourceId,
-    isValid: boolean
+    { invalidate }: { invalidate: boolean }
   ) => {
-    if (isValid) {
-      invalidatedResources.delete(resourceId);
-    } else {
+    const now = Date.now();
+    updatedAt.set(resourceId, now);
+    if (invalidate) {
       invalidatedResources.add(resourceId);
+    } else {
+      invalidatedResources.delete(resourceId);
     }
-    listeners.forEach((cb) => cb());
+    listeners.forEach((cb) => cb(resourceId));
+  };
+
+  const getUpdateAtForResourceIds = (resourceIds: ResourceId[]) => {
+    return resourceIds.map((id) => updatedAt.get(id));
   };
 
   return {
-    has: invalidatedResources.has.bind(invalidatedResources),
-    updateResourceValidationStatus,
+    isInvalid: invalidatedResources.has.bind(invalidatedResources),
+    update,
     onChange: listeners.add.bind(listeners),
     removeOnChange: listeners.delete.bind(listeners),
+    getUpdateAtForResourceIds,
   };
 };
