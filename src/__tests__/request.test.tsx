@@ -351,7 +351,7 @@ describe("request", () => {
 
   describe("advanced data manipulation", () => {
     describe("with retrieve", () => {
-      it("should allow to reuse cached values to optimize data fetching", async () => {
+      it.only("should allow to reuse cached values to optimize data fetching", async () => {
         const productList = [
           { id: 1, name: "product1" },
           { id: 2, name: "product2" },
@@ -390,6 +390,53 @@ describe("request", () => {
 
         expect(await request(products(4))).toEqual({ id: 4, name: "product4" });
         expect(resolveOne).toHaveBeenCalledTimes(2);
+      });
+      it("should use the same resource by default", async () => {
+        const productList = [
+          { id: 1, name: "product1" },
+          { id: 2, name: "product2" },
+          { id: 3, name: "product3" },
+        ];
+        const resolveList = jest.fn(() => Promise.resolve([...productList]));
+        const resolveOne = jest.fn((id: number) =>
+          Promise.resolve({ id: id, name: `product${id}` })
+        );
+        const products = createRequestResource(
+          "test_resource_name",
+          async function* (id?: number) {
+            if (typeof id === "number") {
+              const list = yield retrieve();
+              const item = list?.find((item) => item.id === id);
+              return item ?? resolveOne(id);
+            }
+            return resolveList();
+          },
+          {
+            ttl: 1000,
+            cacheable: true,
+          }
+        );
+        await request(products());
+        expect(await request(products(1))).toEqual({ id: 1, name: "product1" });
+        expect(resolveOne).not.toHaveBeenCalled();
+      });
+      it("should allow to pass arguments for the default resource", async () => {
+        const resolveOne = jest.fn((id: number) =>
+          Promise.resolve({ id: id, name: `product${id}` })
+        );
+        const products = createRequestResource(
+          "test_resource_name",
+          async function* (id: number) {
+            return (yield retrieve([id])) ?? resolveOne(id);
+          },
+          {
+            ttl: 1000,
+            cacheable: true,
+          }
+        );
+        expect(await request(products(1))).toEqual({ id: 1, name: "product1" });
+        expect(await request(products(1))).toEqual({ id: 1, name: "product1" });
+        expect(resolveOne).toHaveBeenCalledTimes(1);
       });
     });
 

@@ -8,9 +8,11 @@ export type ResourceTask<T = any> = (
 ) => Promise<T> | AsyncGenerator<T, any, any>;
 
 export type ResourceMethodConfig<U extends ResourceTask> = {
+  __symbol: symbol;
   args: Parameters<U>;
   resourceId: ResourceId;
   runTask: U;
+  readTask: ResourceTask;
   strategy: CacheStrategies;
   generateCacheKey: (resourceId: ResourceId, inputs: any[]) => string;
   cacheable?: boolean;

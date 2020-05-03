@@ -5,6 +5,7 @@ import {
   ResourceMethodConfig,
   ResourceCreatorConfig,
 } from "./resource.types";
+import { REQUEST_RESOURCE } from "./isRequestResource";
 
 type Method = "create" | "read" | "update" | "delete";
 
@@ -43,8 +44,10 @@ export const createRequestResource: CreateRequestResource = (
       bundleable: method === "read" ? bundleable : false,
       mutates: method !== "read",
       runTask: tasks[method],
+      readTask: tasks.read,
       strategy: method === "read" ? strategy : CacheStrategies.NetworkOnly,
       generateCacheKey: generateCacheKey ?? generateRequestCacheKey,
+      __symbol: REQUEST_RESOURCE,
     });
   };
 

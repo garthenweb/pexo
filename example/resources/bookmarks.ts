@@ -8,7 +8,7 @@ export const bookmarkResource = createRequestResource(
   {
     read: async function* (id?: string) {
       if (id) {
-        const list = yield retrieve(bookmarkResource.get());
+        const list = yield retrieve();
         const item = list?.find((item) => item.id === id);
         return item ?? get(`${API_HOST}/bookmarks/${id}`);
       }
@@ -16,17 +16,17 @@ export const bookmarkResource = createRequestResource(
     },
     create: async function* (bookmark: any) {
       const request = post(`${API_HOST}/bookmarks`, bookmark);
-      yield apply(bookmarkResource(), createListCreateMutation(await request));
+      yield apply(createListCreateMutation(await request));
       return request;
     },
     update: async function* (id: string, bookmark: any) {
       const request = put(`${API_HOST}/bookmarks/${id}`, bookmark);
-      yield apply(bookmarkResource(), createListUpdateMutation(await request));
+      yield apply(createListUpdateMutation(await request));
       return request;
     },
     delete: async function* (id: string) {
       const request = remove(`${API_HOST}/bookmarks/${id}`);
-      yield apply(bookmarkResource(), createListRemoveMutation(id));
+      yield apply(createListRemoveMutation(id));
       return request;
     },
   },
