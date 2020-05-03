@@ -24,6 +24,7 @@ export const executeResource = async <U extends ResourceTask>(
     resource.resourceId,
     resource.args
   );
+
   config.registerResourceUsage(resource.resourceId);
 
   let result: unknown;
@@ -186,28 +187,39 @@ const taskRunner = async <U extends ResourceTask>(
       let result;
       switch (value[0]) {
         case Enhancer.RETRIEVE: {
-          ({ result } = await retrieveCachedResource(
+          const enhancedResource = await getEnhancedResource(
             value[1],
-            resource,
-            config
-          ));
+            resource
+          );
+          if (enhancedResource) {
+            ({ result } = await retrieveCachedResource(
+              enhancedResource,
+              config
+            ));
+          }
           break;
         }
         case Enhancer.APPLY: {
-          const [, enhancedResource, transform] = value;
-          const {
-            cacheKey,
-            result: cacheResult,
-          } = await retrieveCachedResource(enhancedResource, resource, config);
-          if (cacheResult !== undefined && cacheKey) {
-            const nextResult = transform(cacheResult);
-            result = updateCache(
-              nextResult,
-              await enhancedResource,
+          const [, enhancedResourceConfig, transform] = value;
+          const enhancedResource = await getEnhancedResource(
+            enhancedResourceConfig,
+            resource
+          );
+          if (enhancedResource) {
+            const {
               cacheKey,
-              config
-            );
-            updatesApplied = true;
+              result: cacheResult,
+            } = await retrieveCachedResource(enhancedResource, config);
+            if (cacheResult !== undefined && cacheKey) {
+              const nextResult = transform(cacheResult);
+              result = updateCache(
+                nextResult,
+                enhancedResource,
+                cacheKey,
+                config
+              );
+              updatesApplied = true;
+            }
           }
           break;
         }
@@ -221,25 +233,39 @@ const taskRunner = async <U extends ResourceTask>(
 };
 
 const retrieveCachedResource = async <U extends ResourceTask>(
-  enhancedResource: Promise<ResourceMethodConfig<U>>,
-  callingResource: ResourceMethodConfig<U>,
+  enhancedResource: ResourceMethodConfig<U>,
   config: ResourceExecuteConfig
 ) => {
-  const resource = await enhancedResource;
-  const readResource: ResourceMethodConfig<any> = isRequestResource(resource)
-    ? resource
-    : {
-        ...callingResource,
-        args: resource || [],
-        runTask: callingResource.readTask,
-      };
+  if (!enhancedResource) {
+    return { result: undefined, cacheKey: undefined };
+  }
+
   try {
     return await executeResource(
-      { ...readResource, strategy: CacheStrategies.CacheOnly },
+      { ...enhancedResource, strategy: CacheStrategies.CacheOnly },
       config
     );
   } catch {
     // TODO return cache key from error object
     return { result: undefined, cacheKey: undefined };
   }
+};
+
+const getEnhancedResource = async <U extends ResourceTask>(
+  enhancedResource: Promise<ResourceMethodConfig<U>> | any[] | undefined,
+  callingResource: ResourceMethodConfig<U>
+) => {
+  const resource = await enhancedResource;
+  if (isRequestResource(resource)) {
+    return resource;
+  }
+
+  if (!callingResource.readResource) {
+    return undefined;
+  }
+
+  return {
+    ...callingResource.readResource,
+    args: resource || [],
+  };
 };

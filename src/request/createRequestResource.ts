@@ -32,22 +32,28 @@ export const createRequestResource: CreateRequestResource = (
     config
   );
 
+  const createResourceMethodConfig = (
+    method: Method
+  ): Omit<ResourceMethodConfig<any>, "args" | "readResource"> => ({
+    resourceId,
+    ttl: method === "read" ? ttl : 0,
+    cacheable: method === "read" ? cacheable : false,
+    bundleable: method === "read" ? bundleable : false,
+    mutates: method !== "read",
+    runTask: tasks[method],
+    strategy: method === "read" ? strategy : CacheStrategies.NetworkOnly,
+    generateCacheKey: generateCacheKey ?? generateRequestCacheKey,
+    __symbol: REQUEST_RESOURCE,
+  });
+
   const createResourceMethod = (method: Method) => {
     if (typeof tasks[method] !== "function") {
       throw new Error(`Method \`${method}\` does not exist on this resource`);
     }
     return async (...args: any): Promise<ResourceMethodConfig<any>> => ({
-      resourceId,
+      ...createResourceMethodConfig(method),
       args: await Promise.all(args),
-      ttl: method === "read" ? ttl : 0,
-      cacheable: method === "read" ? cacheable : false,
-      bundleable: method === "read" ? bundleable : false,
-      mutates: method !== "read",
-      runTask: tasks[method],
-      readTask: tasks.read,
-      strategy: method === "read" ? strategy : CacheStrategies.NetworkOnly,
-      generateCacheKey: generateCacheKey ?? generateRequestCacheKey,
-      __symbol: REQUEST_RESOURCE,
+      readResource: tasks.read ? createResourceMethodConfig("read") : undefined,
     });
   };
 

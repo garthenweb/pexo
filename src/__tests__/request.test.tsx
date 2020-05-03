@@ -351,7 +351,7 @@ describe("request", () => {
 
   describe("advanced data manipulation", () => {
     describe("with retrieve", () => {
-      it.only("should allow to reuse cached values to optimize data fetching", async () => {
+      it("should allow to reuse cached values to optimize data fetching", async () => {
         const productList = [
           { id: 1, name: "product1" },
           { id: 2, name: "product2" },
@@ -458,6 +458,46 @@ describe("request", () => {
             create: async function* (id: number) {
               const item = await createOne(id);
               yield apply(products(), (list) => [...list, item]);
+              return item;
+            },
+          },
+          {
+            ttl: 1000,
+            cacheable: true,
+          }
+        );
+
+        expect(await request(products())).toEqual(productList);
+        expect(resolveList).toHaveBeenCalledTimes(1);
+
+        expect(await request(products.create(4))).toEqual({
+          id: 4,
+          name: "product4",
+        });
+        expect(await request(products())).toEqual([
+          ...productList,
+          { id: 4, name: "product4" },
+        ]);
+        expect(createOne).toHaveBeenCalledTimes(1);
+        expect(resolveList).toHaveBeenCalledTimes(1);
+      });
+      it("should use the same resource by default", async () => {
+        const productList = [
+          { id: 1, name: "product1" },
+          { id: 2, name: "product2" },
+          { id: 3, name: "product3" },
+        ];
+        const resolveList = jest.fn(() => Promise.resolve([...productList]));
+        const createOne = jest.fn((id: number) =>
+          Promise.resolve({ id: id, name: `product${id}` })
+        );
+        const products = createRequestResource(
+          "test_resource_name",
+          {
+            read: () => resolveList(),
+            create: async function* (id: number) {
+              const item = await createOne(id);
+              yield apply((list) => [...list, item]);
               return item;
             },
           },

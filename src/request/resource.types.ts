@@ -12,9 +12,11 @@ export type ResourceMethodConfig<U extends ResourceTask> = {
   args: Parameters<U>;
   resourceId: ResourceId;
   runTask: U;
-  readTask: ResourceTask;
+  readResource?:
+    | Omit<ResourceMethodConfig<any>, "args" | "readResource">
+    | undefined;
   strategy: CacheStrategies;
-  generateCacheKey: (resourceId: ResourceId, inputs: any[]) => string;
+  generateCacheKey: (resourceId: ResourceId, args: any[]) => string;
   cacheable?: boolean;
   bundleable?: boolean;
   mutates: boolean;
@@ -23,7 +25,7 @@ export type ResourceMethodConfig<U extends ResourceTask> = {
 
 export type ResourceCreatorConfig = {
   strategy?: CacheStrategies;
-  generateCacheKey?: (resourceId: ResourceId, inputs: any[]) => string;
+  generateCacheKey?: (resourceId: ResourceId, args: any[]) => string;
   cacheable?: boolean;
   bundleable?: boolean;
   mutates?: boolean;
