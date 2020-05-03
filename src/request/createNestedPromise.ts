@@ -1,4 +1,3 @@
-
 const nestedPromiseHandler = {
   get: (promise: Promise<any>, prop: string) => {
     if (prop === "then") {

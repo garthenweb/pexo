@@ -1,27 +1,24 @@
-import {
-  Config,
-  ResourceId,
-  Resource,
-  Request,
-  ResourceStatusHandler,
-} from "./types";
 import { executeResource } from "./executeResource";
 import { createAsyncCache } from "./caches";
 import { createNestedPromise } from "./createNestedPromise";
+import {
+  Request,
+  RequestCreatorConfig,
+  ResourceStatusHandler,
+} from "./request.types";
+import { ResourceId } from "./resource.types";
 
 export const createRequest = ({
   cache = createAsyncCache(),
   pendingCache = new Map(),
   resourceState = createResourceStatusHandler(),
-}: Partial<Config> = {}) => {
+}: Partial<RequestCreatorConfig> = {}): Request => {
   const usedResources = new Set<ResourceId>();
   const registerResourceUsage = (resourceId: ResourceId) => {
     usedResources.add(resourceId);
   };
 
-  const request: Request = <T, R>(
-    resource: Promise<Resource<T, R>>
-  ): Promise<R> => {
+  const request: Request = (resource) => {
     return createNestedPromise(
       executeResource(resource, {
         cache,

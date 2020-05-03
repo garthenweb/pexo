@@ -48,10 +48,10 @@ describe("request", () => {
 
   it("should allow crud methods", async () => {
     const resource = createRequestResource("test_resource_name", {
-      read: (id: string) => Promise.resolve({ id }),
-      create: (id: string) => Promise.resolve({ id }),
-      update: (id: string, next: { id: string }) => Promise.resolve(next),
-      delete: (id: string) => Promise.resolve({ id }),
+      read: (id: number) => Promise.resolve({ id }),
+      create: (id: number) => Promise.resolve({ id }),
+      update: (id: number, next: { id: number }) => Promise.resolve(next),
+      delete: (id: number) => Promise.resolve({ id }),
     });
     expect(await request(resource.read(42))).toEqual({ id: 42 });
     expect(await request(resource.create(43))).toEqual({ id: 43 });
@@ -363,7 +363,7 @@ describe("request", () => {
         );
         const products = createRequestResource(
           "test_resource_name",
-          function* (id?: number) {
+          async function* (id?: number) {
             if (typeof id === "number") {
               const list = yield retrieve(products());
               const item = list?.find((item) => item.id === id);

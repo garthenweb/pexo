@@ -1,6 +1,10 @@
-import { ExecuteConfig, Resource } from "./types";
 import { isGeneratorValue } from "../utils/isGeneratorValue";
 import { Enhancer } from "./resourceEnhancer";
+import {
+  ResourceMethodConfig,
+  ResourceTask,
+  ResourceExecuteConfig,
+} from "./resource.types";
 
 export enum CacheStrategies {
   CacheFirst,
@@ -10,15 +14,15 @@ export enum CacheStrategies {
   StaleWhileRevalidate,
 }
 
-export const executeResource = async <T, R>(
-  asyncResource: Promise<Resource<T, R>>,
-  config: ExecuteConfig,
-  resourceOverrides?: Partial<Resource<any, any>>
+export const executeResource = async <U extends ResourceTask>(
+  asyncResource: Promise<ResourceMethodConfig<U>>,
+  config: ResourceExecuteConfig,
+  resourceOverrides?: Partial<ResourceMethodConfig<U>>
 ) => {
   const resource = { ...(await asyncResource), ...resourceOverrides };
   const cacheKey = resource.generateCacheKey(
     resource.resourceId,
-    resource.inputs
+    resource.args
   );
   config.registerResourceUsage(resource.resourceId);
 
@@ -78,10 +82,10 @@ export const executeResource = async <T, R>(
   return { cacheKey, result };
 };
 
-const retrieveFromCache = async <T, R>(
-  { resourceId, ttl, cacheable }: Resource<T, R>,
+const retrieveFromCache = async <U extends ResourceTask>(
+  { resourceId, ttl, cacheable }: ResourceMethodConfig<U>,
   cacheKey: string,
-  { cache, resourceState }: ExecuteConfig,
+  { cache, resourceState }: ResourceExecuteConfig,
   options?: { allowStale: boolean }
 ) => {
   const { allowStale } = Object.assign({}, options);
@@ -110,19 +114,19 @@ const retrieveFromCache = async <T, R>(
   return void 0;
 };
 
-const executeAndStoreInCache = async <T, R>(
-  resource: Resource<T, R>,
+const executeAndStoreInCache = async <U extends ResourceTask>(
+  resource: ResourceMethodConfig<U>,
   cacheKey: string,
-  config: ExecuteConfig
+  config: ResourceExecuteConfig
 ) => {
-  const { resourceId, inputs, runTask, bundleable, mutates } = resource;
+  const { resourceId, args, runTask, bundleable, mutates } = resource;
   const { pendingCache, resourceState } = config;
   if (bundleable && pendingCache.has(cacheKey)) {
     const { value } = pendingCache.get(cacheKey)!;
-    return value.then(({ result }) => result);
+    return value.then(({ result }: any) => result);
   }
 
-  const request = taskRunner(runTask(...inputs), config);
+  const request = taskRunner(runTask(...args), config);
 
   if (bundleable) {
     pendingCache.set(cacheKey, {
@@ -148,11 +152,11 @@ const executeAndStoreInCache = async <T, R>(
   }
 };
 
-const updateCache = async <T, R>(
+const updateCache = async <U extends ResourceTask>(
   nextValue: unknown,
-  { cacheable, resourceId }: Resource<T, R>,
+  { cacheable, resourceId }: ResourceMethodConfig<U>,
   cacheKey: string,
-  { cache, resourceState }: ExecuteConfig
+  { cache, resourceState }: ResourceExecuteConfig
 ) => {
   if (cacheable) {
     cache.set(cacheKey, {
@@ -164,8 +168,8 @@ const updateCache = async <T, R>(
 };
 
 const taskRunner = async (
-  request: Promise<any> | GeneratorFunction,
-  config: ExecuteConfig
+  request: Promise<any> | AsyncGenerator<any, any, any>,
+  config: ResourceExecuteConfig
 ) => {
   let updatesApplied = false;
   if (!isGeneratorValue(request)) {
@@ -211,9 +215,9 @@ const taskRunner = async (
   return { result: value, updatesApplied };
 };
 
-const retrieveCachedResource = async (
-  enhancedResource: Promise<Resource<any, any>>,
-  config: ExecuteConfig
+const retrieveCachedResource = async <U extends ResourceTask>(
+  enhancedResource: Promise<ResourceMethodConfig<U>>,
+  config: ResourceExecuteConfig
 ) => {
   try {
     return await executeResource(enhancedResource, config, {

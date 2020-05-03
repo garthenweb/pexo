@@ -1,28 +1,20 @@
-import { RunTask, ResourceId, Resource } from "./types";
 import { CacheStrategies } from "./executeResource";
 import { generateRequestCacheKey } from "../utils/cacheKey";
-
-interface RequestResourceConfig {
-  cacheable?: boolean;
-  bundleable?: boolean;
-  ttl?: number;
-  strategy?: CacheStrategies;
-  generateCacheKey?: (resourceId: ResourceId, inputs: any[]) => string;
-}
+import {
+  CreateRequestResource,
+  ResourceMethodConfig,
+  ResourceCreatorConfig,
+} from "./resource.types";
 
 type Method = "create" | "read" | "update" | "delete";
 
-type ResourceCall<T, R> = (input: T) => Promise<Resource<T, R>>;
-
-let lastResourceId = 0;
-export const createRequestResource = <T, R>(
-  resourceId: string,
-  runTask: RunTask<T, R>,
-  config?: RequestResourceConfig
-): ResourceCall<T, R> => {
-  const id =
-    typeof resourceId === "string" ? resourceId : (++lastResourceId).toString();
-  const tasks = typeof runTask === "function" ? { read: runTask } : runTask;
+export const createRequestResource: CreateRequestResource = (
+  resourceId: any,
+  taskConfig: any,
+  config?: ResourceCreatorConfig
+) => {
+  const tasks =
+    typeof taskConfig === "function" ? { read: taskConfig } : taskConfig;
   const {
     ttl,
     cacheable,
@@ -43,9 +35,9 @@ export const createRequestResource = <T, R>(
     if (typeof tasks[method] !== "function") {
       throw new Error(`Method \`${method}\` does not exist on this resource`);
     }
-    return async (...args: T[]) => ({
-      resourceId: id,
-      inputs: await Promise.all(args),
+    return async (...args: any): Promise<ResourceMethodConfig<any>> => ({
+      resourceId,
+      args: await Promise.all(args),
       ttl: method === "read" ? ttl : 0,
       cacheable: method === "read" ? cacheable : false,
       bundleable: method === "read" ? bundleable : false,
@@ -56,13 +48,13 @@ export const createRequestResource = <T, R>(
     });
   };
 
-  const defaultTask =
+  const defaultTask: any =
     typeof tasks.read === "function"
       ? createResourceMethod("read")
       : () => new Error("Read task does not exist for this resource");
 
   Object.keys(tasks).forEach((method) => {
-    defaultTask[method] = createResourceMethod(method);
+    defaultTask[method] = createResourceMethod(method as Method);
   });
 
   return defaultTask;

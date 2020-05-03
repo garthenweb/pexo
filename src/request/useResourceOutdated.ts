@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Request } from "./types";
 import { exists } from "../utils/exists";
+import { Request } from "./request.types";
 
 const calcIsOutdated = (
   resourcesUpdatedAt: (number | undefined)[],
