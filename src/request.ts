@@ -3,4 +3,4 @@ export { createRequestResource } from "./request/createRequestResource";
 export { useResourceOutdated } from "./request/useResourceOutdated";
 export { CacheStrategies } from "./request/executeResource";
 export { createAsyncCache } from "./request/caches";
-export { retrieve, apply } from "./request/resourceEnhancer";
+export { retrieve, apply, request } from "./request/resourceEnhancer";

@@ -192,9 +192,24 @@ const taskRunner = async <U extends ResourceTask>(
             resource
           );
           if (enhancedResource) {
-            ({ result } = await retrieveCachedResource(
+            ({ result } = await accessCachedResource(
               enhancedResource,
-              config
+              config,
+              CacheStrategies.CacheOnly
+            ));
+          }
+          break;
+        }
+        case Enhancer.REQUEST: {
+          const enhancedResource = await getEnhancedResource(
+            value[1],
+            resource
+          );
+          if (enhancedResource) {
+            ({ result } = await accessCachedResource(
+              enhancedResource,
+              config,
+              CacheStrategies.CacheFirst
             ));
           }
           break;
@@ -209,7 +224,11 @@ const taskRunner = async <U extends ResourceTask>(
             const {
               cacheKey,
               result: cacheResult,
-            } = await retrieveCachedResource(enhancedResource, config);
+            } = await accessCachedResource(
+              enhancedResource,
+              config,
+              CacheStrategies.CacheOnly
+            );
             if (cacheResult !== undefined && cacheKey) {
               const nextResult = transform(cacheResult);
               result = updateCache(
@@ -232,19 +251,17 @@ const taskRunner = async <U extends ResourceTask>(
   return { result: value, updatesApplied };
 };
 
-const retrieveCachedResource = async <U extends ResourceTask>(
+const accessCachedResource = async <U extends ResourceTask>(
   enhancedResource: ResourceMethodConfig<U>,
-  config: ResourceExecuteConfig
+  config: ResourceExecuteConfig,
+  strategy: CacheStrategies
 ) => {
   if (!enhancedResource) {
     return { result: undefined, cacheKey: undefined };
   }
 
   try {
-    return await executeResource(
-      { ...enhancedResource, strategy: CacheStrategies.CacheOnly },
-      config
-    );
+    return await executeResource({ ...enhancedResource, strategy }, config);
   } catch {
     // TODO return cache key from error object
     return { result: undefined, cacheKey: undefined };

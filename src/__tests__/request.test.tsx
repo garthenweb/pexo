@@ -6,6 +6,7 @@ import {
   createAsyncCache,
   retrieve,
   apply,
+  request as requestEnhancer,
 } from "../request";
 
 describe("request", () => {
@@ -520,6 +521,29 @@ describe("request", () => {
         ]);
         expect(createOne).toHaveBeenCalledTimes(1);
         expect(resolveList).toHaveBeenCalledTimes(1);
+      });
+    });
+    describe("with request", () => {
+      it("should allow to request data from another resource", async () => {
+        const createOne = jest.fn((id: number, token: string) =>
+          Promise.resolve({ id: id, name: `product${id}` })
+        );
+        const authToken = createRequestResource(() =>
+          Promise.resolve("token1234")
+        );
+        const basket = createRequestResource("test_resource_name", {
+          create: async function* (id: number) {
+            const token = yield requestEnhancer(authToken());
+            const item = await createOne(id, token);
+            return item;
+          },
+        });
+
+        expect(await request(basket.create(6))).toEqual({
+          id: 6,
+          name: `product6`,
+        });
+        expect(createOne).toHaveBeenCalledWith(6, "token1234");
       });
     });
   });

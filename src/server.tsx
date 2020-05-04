@@ -7,7 +7,6 @@ import { renderToChunkStream } from "./renderer/renderToChunkStream";
 import { preloadBlockingChunks } from "./loader/preloadBlockingChunks";
 import { Redirect } from "./utils/Redirect";
 import { ViewStateCache } from "./types/ViewStateCache";
-import { enhanceChunksWithViewStateCache } from "./utils/enhanceChunksWithViewStateCache";
 import { createDefaultLogger, Logger } from "./utils/logger";
 import {
   Manifest,
