@@ -7,11 +7,36 @@ type ResourceSimpleTask<T = unknown> = (...args: any[]) => Promise<T>;
 
 type ResourceEnhancedTask<T = unknown> = (
   ...args: any[]
-) => (ctx: {
+) => (ctx: EnhancerObject) => Promise<T>;
+
+export type MaybeEnhancerResource<U extends ResourceTask> =
+  | Promise<ResourceMethodConfig<U>>
+  | any[]
+  | undefined;
+
+export type EnhancerObject = {
   request: <V extends ResourceTask>(
-    resource?: Promise<ResourceMethodConfig<V>>
-  ) => ReturnType<V>;
-}) => Promise<T>;
+    maybeResource: MaybeEnhancerResource<V>
+  ) => ResourceTaskReturnType<V>;
+  retrieve: <V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>
+  ) => ResourceTaskReturnType<V>;
+  apply: <T extends unknown, V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>,
+    transformer: (prev: T) => T
+  ) => ResourceTaskReturnType<V>;
+};
+
+export type ResourceTaskReturnType<
+  U extends ResourceTask,
+  T = ReturnType<U>
+> = Promise<
+  T extends (...args: any) => any
+    ? ReturnType<T>
+    : T extends AsyncGenerator<any, infer V, any>
+    ? V
+    : T
+>;
 
 type ResourceEnhancedGeneratorTask<T = unknown> = (
   ...args: any[]

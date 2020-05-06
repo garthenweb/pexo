@@ -4,6 +4,8 @@ import {
   ResourceMethodConfig,
   ResourceTask,
   ResourceExecuteConfig,
+  MaybeEnhancerResource,
+  EnhancerObject,
 } from "./resource.types";
 import { isRequestResource } from "./isRequestResource";
 import { isSyncValue } from "../utils/isSyncValue";
@@ -178,7 +180,7 @@ const taskRunner = async <U extends ResourceTask>(
     return executeGeneratorEnhancer(req, resource, config);
   }
   let updatesApplied = false;
-  if (isSyncValue(req)) {
+  if (isSyncValue(req) && typeof req === "function") {
     const mutableOptions = { updatesApplied: false };
     req = req(createEnhancer(resource, config, mutableOptions));
   }
@@ -190,17 +192,12 @@ const createEnhancer = <U extends ResourceTask>(
   config: ResourceExecuteConfig,
   options: { updatesApplied: boolean }
 ) => {
-  const retrieve = <V extends ResourceTask>(
-    maybeResource: MaybeEnhancerResource<V>
-  ) => executeRetrieveEnhancer(maybeResource, parentResource, config);
-  const request = <V extends ResourceTask>(
-    maybeResource: MaybeEnhancerResource<V>
-  ) => executeRequestEnhancer(maybeResource, parentResource, config);
-  const apply = <T extends unknown, V extends ResourceTask>(
-    maybeResource: MaybeEnhancerResource<V>,
-    transformer: (cachedResource: T) => T
-  ) => {
-    const result = executeApplyEnhancer(
+  const retrieve: EnhancerObject["retrieve"] = (maybeResource) =>
+    executeRetrieveEnhancer(maybeResource, parentResource, config);
+  const request: EnhancerObject["request"] = (maybeResource) =>
+    executeRequestEnhancer(maybeResource, parentResource, config);
+  const apply: EnhancerObject["apply"] = async (maybeResource, transformer) => {
+    const result = await executeApplyEnhancer(
       maybeResource,
       parentResource,
       config,
@@ -299,11 +296,6 @@ const executeRequestEnhancer = async <
   );
   return result;
 };
-
-type MaybeEnhancerResource<U extends ResourceTask> =
-  | Promise<ResourceMethodConfig<U>>
-  | any[]
-  | undefined;
 
 const executeApplyEnhancer = async <
   U extends ResourceTask,
