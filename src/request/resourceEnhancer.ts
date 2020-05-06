@@ -6,31 +6,35 @@ export const Enhancer = {
   REQUEST: Symbol("REQUEST"),
 };
 
+type EnhancerResourceType<U extends ResourceTask> =
+  | Promise<ResourceMethodConfig<U>>
+  | Parameters<U>;
+
+export type EnhancerType<U extends ResourceTask, T = undefined> = readonly [
+  symbol,
+  EnhancerResourceType<U> | undefined,
+  T
+];
+
 export const retrieve = <U extends ResourceTask>(
-  resource?: Promise<ResourceMethodConfig<U>> | Parameters<U>
-) => [Enhancer.RETRIEVE, resource];
+  resource?: EnhancerResourceType<U>
+): EnhancerType<U> => [Enhancer.RETRIEVE, resource, undefined];
 
 export const request = <U extends ResourceTask>(
   resource?: Promise<ResourceMethodConfig<U>> | Parameters<U>
 ) => [Enhancer.REQUEST, resource];
 
 interface Apply {
-  <T extends unknown, U extends ResourceTask<T>>(
-    resource: ResourceMethodConfig<U> | Parameters<U>,
+  <T extends unknown, U extends ResourceTask>(
+    resource: EnhancerResourceType<U>,
     transformer: (cachedResource: T) => T
-  ): readonly [
-    symbol,
-    ResourceMethodConfig<U> | Parameters<U>,
-    (cachedResource: T) => T
-  ];
+  ): EnhancerType<U, (cachedResource: T) => T>;
 }
 
 interface Apply {
-  <T extends unknown>(transformer: (cachedResource: T) => T): readonly [
-    symbol,
-    undefined,
-    (cachedResource: T) => T
-  ];
+  <T extends unknown, U extends ResourceTask>(
+    transformer: (cachedResource: T) => T
+  ): EnhancerType<U, (cachedResource: T) => T>;
 }
 
 export const apply: Apply = (...args: any) =>

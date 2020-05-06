@@ -546,5 +546,21 @@ describe("request", () => {
         expect(createOne).toHaveBeenCalledWith(6, "token1234");
       });
     });
+
+    it("should work with generators and second return function", async () => {
+      const get = createRequestResource("test_resource_name", () =>
+        Promise.resolve(1)
+      );
+      const getWrap1 = createRequestResource("test_resource_name_wrap1", {
+        read: () => ({ request }) => request(get()),
+      });
+      const getWrap2 = createRequestResource("test_resource_name_wrap1", {
+        read: async function* () {
+          return (yield requestEnhancer(get())) as number;
+        },
+      });
+      expect(await request(getWrap1())).toBe(1);
+      expect(await request(getWrap2())).toBe(1);
+    });
   });
 });

@@ -6,6 +6,7 @@ import {
   ResourceExecuteConfig,
 } from "./resource.types";
 import { isRequestResource } from "./isRequestResource";
+import { isSyncValue } from "../utils/isSyncValue";
 
 export enum CacheStrategies {
   CacheFirst,
@@ -172,13 +173,54 @@ const taskRunner = async <U extends ResourceTask>(
   resource: ResourceMethodConfig<U>,
   config: ResourceExecuteConfig
 ) => {
-  const request = resource.runTask(...resource.args);
-  let updatesApplied = false;
-  if (!isGeneratorValue(request)) {
-    return request.then((result) => ({ result, updatesApplied }));
+  let req = resource.runTask(...resource.args);
+  if (isGeneratorValue(req)) {
+    return executeGeneratorEnhancer(req, resource, config);
   }
+  let updatesApplied = false;
+  if (isSyncValue(req)) {
+    const mutableOptions = { updatesApplied: false };
+    req = req(createEnhancer(resource, config, mutableOptions));
+  }
+  return req.then((result) => ({ result, updatesApplied }));
+};
 
-  let { value, done } = await request.next();
+const createEnhancer = <U extends ResourceTask>(
+  parentResource: ResourceMethodConfig<U>,
+  config: ResourceExecuteConfig,
+  options: { updatesApplied: boolean }
+) => {
+  const retrieve = <V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>
+  ) => executeRetrieveEnhancer(maybeResource, parentResource, config);
+  const request = <V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>
+  ) => executeRequestEnhancer(maybeResource, parentResource, config);
+  const apply = <T extends unknown, V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>,
+    transformer: (cachedResource: T) => T
+  ) => {
+    const result = executeApplyEnhancer(
+      maybeResource,
+      parentResource,
+      config,
+      transformer
+    );
+    if (result) {
+      options.updatesApplied = true;
+    }
+    return result;
+  };
+  return { request, retrieve, apply };
+};
+
+const executeGeneratorEnhancer = async <U extends ResourceTask, T = unknown>(
+  req: AsyncGenerator<unknown, T, unknown>,
+  parentResource: ResourceMethodConfig<U>,
+  config: ResourceExecuteConfig
+) => {
+  let updatesApplied = false;
+  let { value, done } = await req.next();
   while (!done) {
     if (done) {
       return value;
@@ -187,68 +229,130 @@ const taskRunner = async <U extends ResourceTask>(
       let result;
       switch (value[0]) {
         case Enhancer.RETRIEVE: {
-          const enhancedResource = await getEnhancedResource(
+          result = await executeRetrieveEnhancer(
             value[1],
-            resource
+            parentResource,
+            config
           );
-          if (enhancedResource) {
-            ({ result } = await accessCachedResource(
-              enhancedResource,
-              config,
-              CacheStrategies.CacheOnly
-            ));
-          }
           break;
         }
         case Enhancer.REQUEST: {
-          const enhancedResource = await getEnhancedResource(
+          result = await executeRequestEnhancer(
             value[1],
-            resource
+            parentResource,
+            config
           );
-          if (enhancedResource) {
-            ({ result } = await accessCachedResource(
-              enhancedResource,
-              config,
-              CacheStrategies.CacheFirst
-            ));
-          }
           break;
         }
         case Enhancer.APPLY: {
-          const [, enhancedResourceConfig, transform] = value;
-          const enhancedResource = await getEnhancedResource(
-            enhancedResourceConfig,
-            resource
+          const [, maybeResource, transform] = value;
+          result = await executeApplyEnhancer(
+            maybeResource,
+            parentResource,
+            config,
+            transform
           );
-          if (enhancedResource) {
-            const {
-              cacheKey,
-              result: cacheResult,
-            } = await accessCachedResource(
-              enhancedResource,
-              config,
-              CacheStrategies.CacheOnly
-            );
-            if (cacheResult !== undefined && cacheKey) {
-              const nextResult = transform(cacheResult);
-              result = updateCache(
-                nextResult,
-                enhancedResource,
-                cacheKey,
-                config
-              );
-              updatesApplied = true;
-            }
+          if (result) {
+            updatesApplied = true;
           }
           break;
         }
       }
 
-      ({ value, done } = await request.next(result));
+      ({ value, done } = await req.next(result));
     }
   }
 
   return { result: value, updatesApplied };
+};
+
+const executeRetrieveEnhancer = async <
+  U extends ResourceTask,
+  V extends ResourceTask
+>(
+  maybeResource: MaybeEnhancerResource<U>,
+  parentResource: ResourceMethodConfig<V>,
+  config: ResourceExecuteConfig
+) => {
+  const { result } = await executeEnhancer(
+    maybeResource,
+    parentResource,
+    config,
+    CacheStrategies.CacheOnly
+  );
+  return result;
+};
+
+const executeRequestEnhancer = async <
+  U extends ResourceTask,
+  V extends ResourceTask
+>(
+  maybeResource: MaybeEnhancerResource<U>,
+  parentResource: ResourceMethodConfig<V>,
+  config: ResourceExecuteConfig
+) => {
+  const { result } = await executeEnhancer(
+    maybeResource,
+    parentResource,
+    config,
+    CacheStrategies.CacheFirst
+  );
+  return result;
+};
+
+type MaybeEnhancerResource<U extends ResourceTask> =
+  | Promise<ResourceMethodConfig<U>>
+  | any[]
+  | undefined;
+
+const executeApplyEnhancer = async <
+  U extends ResourceTask,
+  V extends ResourceTask,
+  T extends unknown
+>(
+  maybeResource: MaybeEnhancerResource<U>,
+  parentResource: ResourceMethodConfig<V>,
+  config: ResourceExecuteConfig,
+  transform: (r: T) => T
+) => {
+  const {
+    result: cacheResult,
+    cacheKey,
+    enhancedResource,
+  } = await executeEnhancer(
+    maybeResource,
+    parentResource,
+    config,
+    CacheStrategies.CacheOnly
+  );
+
+  if (enhancedResource && cacheResult !== undefined && cacheKey) {
+    const nextResult = transform(cacheResult);
+    updateCache(nextResult, enhancedResource, cacheKey, config);
+    return nextResult;
+  }
+
+  return undefined;
+};
+
+const executeEnhancer = async <U extends ResourceTask, V extends ResourceTask>(
+  maybeResource: MaybeEnhancerResource<U>,
+  parentResource: ResourceMethodConfig<V>,
+  config: ResourceExecuteConfig,
+  strategy: CacheStrategies
+) => {
+  const resource = await getEnhancedResource(maybeResource, parentResource);
+  if (resource) {
+    return {
+      ...(await accessCachedResource(resource, config, strategy)),
+      enhancedResource: resource,
+    };
+  }
+  return {
+    result: undefined,
+    cacheKey: undefined,
+    enhancedResource: undefined,
+  };
 };
 
 const accessCachedResource = async <U extends ResourceTask>(
@@ -268,21 +372,24 @@ const accessCachedResource = async <U extends ResourceTask>(
   }
 };
 
-const getEnhancedResource = async <U extends ResourceTask>(
-  enhancedResource: Promise<ResourceMethodConfig<U>> | any[] | undefined,
-  callingResource: ResourceMethodConfig<U>
+const getEnhancedResource = async <
+  U extends ResourceTask,
+  V extends ResourceTask
+>(
+  enhancedResource: MaybeEnhancerResource<U>,
+  parentResource: ResourceMethodConfig<V>
 ) => {
   const resource = await enhancedResource;
   if (isRequestResource(resource)) {
     return resource;
   }
 
-  if (!callingResource.readResource) {
+  if (!parentResource.readResource) {
     return undefined;
   }
 
   return {
-    ...callingResource.readResource,
+    ...parentResource.readResource,
     args: resource || [],
   };
 };

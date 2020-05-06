@@ -3,9 +3,24 @@ import { RequestCreatorConfig } from "./request.types";
 
 export type ResourceId = string;
 
-export type ResourceTask<T = any> = (
+type ResourceSimpleTask<T = unknown> = (...args: any[]) => Promise<T>;
+
+type ResourceEnhancedTask<T = unknown> = (
   ...args: any[]
-) => Promise<T> | AsyncGenerator<T, any, any>;
+) => (ctx: {
+  request: <V extends ResourceTask>(
+    resource?: Promise<ResourceMethodConfig<V>>
+  ) => ReturnType<V>;
+}) => Promise<T>;
+
+type ResourceEnhancedGeneratorTask<T = unknown> = (
+  ...args: any[]
+) => AsyncGenerator<unknown, T, unknown>;
+
+export type ResourceTask =
+  | ResourceSimpleTask
+  | ResourceEnhancedTask
+  | ResourceEnhancedGeneratorTask;
 
 export type ResourceMethodConfig<U extends ResourceTask> = {
   __symbol: symbol;

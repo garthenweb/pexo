@@ -6,9 +6,13 @@ import {
 import { AsyncCache, SyncCache } from "./caches";
 
 export interface Request {
-  <U extends ResourceTask>(resource: Promise<ResourceMethodConfig<U>>): Promise<
-    ReturnType<U>
-  >;
+  <U extends ResourceTask, T = ReturnType<U>>(
+    resource: Promise<ResourceMethodConfig<U>>
+  ): T extends (...args: any) => any
+    ? ReturnType<T>
+    : T extends AsyncGenerator<any, infer V, any>
+    ? V
+    : T;
   clone: () => Request;
   reset: () => void;
   addResourceUpdatedListener: (cb: (updatedResourceId: string) => void) => void;
