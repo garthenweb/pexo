@@ -62,7 +62,7 @@
     "compression": "^1.7.4",
     "core-js": "^3.6.5",
     "object-hash": "^2.0.3",
-    "parcel": "^2.0.0-nightly.247",
+    "parcel": "^2.0.0-nightly.251",
     "parcel-reporter-pexo-manifest": "file:./src/cli/parcel-reporter-pexo-manifest",
     "parcel-runtime-pexo-dynamic-imports": "file:./src/cli/parcel-runtime-pexo-dynamic-imports",
     "react": "^16.13.1",
