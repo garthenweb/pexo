@@ -7,25 +7,45 @@ type ResourceSimpleTask<T = unknown> = (...args: any[]) => Promise<T>;
 
 type ResourceEnhancedTask<T = unknown> = (
   ...args: any[]
-) => (ctx: EnhancerObject) => Promise<T>;
+) => (ctx: EnhancerObject<T>) => Promise<T>;
 
 export type MaybeEnhancerResource<U extends ResourceTask> =
   | Promise<ResourceMethodConfig<U>>
   | any[]
   | undefined;
 
-export type EnhancerObject = {
-  request: <V extends ResourceTask>(
-    maybeResource: MaybeEnhancerResource<V>
-  ) => ResourceTaskReturnType<V>;
-  retrieve: <V extends ResourceTask>(
-    maybeResource: MaybeEnhancerResource<V>
-  ) => ResourceTaskReturnType<V>;
-  apply: <T extends unknown, V extends ResourceTask>(
+interface Apply<U> {
+  <V extends ResourceTask, T = ResourceTaskReturnType<V>>(
     maybeResource: MaybeEnhancerResource<V>,
     transformer: (prev: T) => T
-  ) => ResourceTaskReturnType<V>;
-};
+  ): ResourceTaskReturnType<V>;
+}
+interface Apply<U> {
+  (transformer: (prev: U) => U): U;
+}
+
+interface Retrieve<U> {
+  <V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>
+  ): ResourceTaskReturnType<V>;
+}
+interface Retrieve<U> {
+  (): U;
+}
+interface Request<U> {
+  <V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>
+  ): ResourceTaskReturnType<V>;
+}
+interface Request<U> {
+  (): U;
+}
+
+export interface EnhancerObject<U> {
+  request: Request<U>;
+  retrieve: Retrieve<U>;
+  apply: Apply<U>;
+}
 
 export type ResourceTaskReturnType<
   U extends ResourceTask,
@@ -99,6 +119,33 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
+  <U extends ResourceTask>(
+    tasks: { update: U },
+    config?: ResourceCreatorConfig
+  ): {
+    update: ResourceMethod<U>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask>(
+    tasks: { create: C },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+  };
+}
+
+export interface CreateRequestResource {
+  <D extends ResourceTask>(
+    tasks: { delete: D },
+    config?: ResourceCreatorConfig
+  ): {
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
   <R extends ResourceTask, C extends ResourceTask>(
     tasks: {
       read: R;
@@ -125,6 +172,7 @@ export interface CreateRequestResource {
     update: ResourceMethod<U>;
   };
 }
+
 export interface CreateRequestResource {
   <R extends ResourceTask, D extends ResourceTask>(
     tasks: {
@@ -135,6 +183,45 @@ export interface CreateRequestResource {
   ): {
     (...args: Parameters<R>): Promise<ResourceMethodConfig<R>>;
     read: ResourceMethod<R>;
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask, U extends ResourceTask>(
+    tasks: {
+      create: C;
+      update: U;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+    update: ResourceMethod<U>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask, D extends ResourceTask>(
+    tasks: {
+      create: C;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
+  <U extends ResourceTask, D extends ResourceTask>(
+    tasks: {
+      update: U;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    update: ResourceMethod<U>;
     delete: ResourceMethod<D>;
   };
 }
@@ -152,6 +239,37 @@ export interface CreateRequestResource {
     read: ResourceMethod<R>;
     create: ResourceMethod<C>;
     update: ResourceMethod<U>;
+  };
+}
+
+export interface CreateRequestResource {
+  <R extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+    tasks: {
+      read: R;
+      update: U;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    (...args: Parameters<R>): Promise<ResourceMethodConfig<R>>;
+    read: ResourceMethod<R>;
+    update: ResourceMethod<U>;
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+    tasks: {
+      create: C;
+      update: U;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+    update: ResourceMethod<U>;
+    delete: ResourceMethod<D>;
   };
 }
 
@@ -174,87 +292,6 @@ export interface CreateRequestResource {
     read: ResourceMethod<R>;
     create: ResourceMethod<C>;
     update: ResourceMethod<U>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask>(
-    tasks: { create: C },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask>(
-    tasks: {
-      create: C;
-      update: U;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-    update: ResourceMethod<U>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
-    tasks: {
-      create: C;
-      update: U;
-      delete: D;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-    update: ResourceMethod<U>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask, D extends ResourceTask>(
-    tasks: {
-      create: C;
-      delete: D;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <U extends ResourceTask>(
-    tasks: { update: U },
-    config?: ResourceCreatorConfig
-  ): {
-    update: ResourceMethod<U>;
-  };
-}
-
-export interface CreateRequestResource {
-  <U extends ResourceTask, D extends ResourceTask>(
-    tasks: {
-      update: U;
-      delete: D;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    update: ResourceMethod<U>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <D extends ResourceTask>(
-    tasks: { delete: D },
-    config?: ResourceCreatorConfig
-  ): {
     delete: ResourceMethod<D>;
   };
 }
@@ -282,6 +319,36 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
+  <U extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: { update: U },
+    config?: ResourceCreatorConfig
+  ): {
+    update: ResourceMethod<U>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: { create: C },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+  };
+}
+
+export interface CreateRequestResource {
+  <D extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: { delete: D },
+    config?: ResourceCreatorConfig
+  ): {
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
   <R extends ResourceTask, C extends ResourceTask>(
     resourceId: ResourceId,
     tasks: {
@@ -310,6 +377,7 @@ export interface CreateRequestResource {
     update: ResourceMethod<U>;
   };
 }
+
 export interface CreateRequestResource {
   <R extends ResourceTask, D extends ResourceTask>(
     resourceId: ResourceId,
@@ -321,6 +389,48 @@ export interface CreateRequestResource {
   ): {
     (...args: Parameters<R>): Promise<ResourceMethodConfig<R>>;
     read: ResourceMethod<R>;
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask, U extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: {
+      create: C;
+      update: U;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+    update: ResourceMethod<U>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask, D extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: {
+      create: C;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
+  <U extends ResourceTask, D extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: {
+      update: U;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    update: ResourceMethod<U>;
     delete: ResourceMethod<D>;
   };
 }
@@ -339,6 +449,39 @@ export interface CreateRequestResource {
     read: ResourceMethod<R>;
     create: ResourceMethod<C>;
     update: ResourceMethod<U>;
+  };
+}
+
+export interface CreateRequestResource {
+  <R extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: {
+      read: R;
+      update: U;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    (...args: Parameters<R>): Promise<ResourceMethodConfig<R>>;
+    read: ResourceMethod<R>;
+    update: ResourceMethod<U>;
+    delete: ResourceMethod<D>;
+  };
+}
+
+export interface CreateRequestResource {
+  <C extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+    resourceId: ResourceId,
+    tasks: {
+      create: C;
+      update: U;
+      delete: D;
+    },
+    config?: ResourceCreatorConfig
+  ): {
+    create: ResourceMethod<C>;
+    update: ResourceMethod<U>;
+    delete: ResourceMethod<D>;
   };
 }
 
@@ -362,94 +505,6 @@ export interface CreateRequestResource {
     read: ResourceMethod<R>;
     create: ResourceMethod<C>;
     update: ResourceMethod<U>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask>(
-    resourceId: ResourceId,
-    tasks: { create: C },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask>(
-    resourceId: ResourceId,
-    tasks: {
-      create: C;
-      update: U;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-    update: ResourceMethod<U>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
-    resourceId: ResourceId,
-    tasks: {
-      create: C;
-      update: U;
-      delete: D;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-    update: ResourceMethod<U>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <C extends ResourceTask, D extends ResourceTask>(
-    resourceId: ResourceId,
-    tasks: {
-      create: C;
-      delete: D;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    create: ResourceMethod<C>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <U extends ResourceTask>(
-    resourceId: ResourceId,
-    tasks: { update: U },
-    config?: ResourceCreatorConfig
-  ): {
-    update: ResourceMethod<U>;
-  };
-}
-
-export interface CreateRequestResource {
-  <U extends ResourceTask, D extends ResourceTask>(
-    resourceId: ResourceId,
-    tasks: {
-      update: U;
-      delete: D;
-    },
-    config?: ResourceCreatorConfig
-  ): {
-    update: ResourceMethod<U>;
-    delete: ResourceMethod<D>;
-  };
-}
-
-export interface CreateRequestResource {
-  <D extends ResourceTask>(
-    resourceId: ResourceId,
-    tasks: { delete: D },
-    config?: ResourceCreatorConfig
-  ): {
     delete: ResourceMethod<D>;
   };
 }

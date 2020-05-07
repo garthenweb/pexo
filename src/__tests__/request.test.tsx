@@ -552,9 +552,9 @@ describe("request", () => {
         Promise.resolve(1)
       );
       const getWrap1 = createRequestResource("test_resource_name_wrap1", {
-        read: () => ({ request }) => request(get()),
+        read: () => async ({ request }) => request(get()),
       });
-      const getWrap2 = createRequestResource("test_resource_name_wrap1", {
+      const getWrap2 = createRequestResource("test_resource_name_wrap2", {
         read: async function* () {
           return (yield requestEnhancer(get())) as number;
         },
