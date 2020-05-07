@@ -38,11 +38,15 @@ export const bookmarkResource = createRequestResource<Bookmark[]>(
   { cacheable: true, ttl: 10000 }
 );
 
-const createListCreateMutation = (nextItem: any) => (prevList: any[] = []) => {
+const createListCreateMutation = (nextItem: Bookmark) => (
+  prevList: Bookmark[] = []
+) => {
   return [...prevList, nextItem];
 };
 
-const createListUpdateMutation = (updateItem: any) => (prevList: any[]) => {
+const createListUpdateMutation = (updateItem: Bookmark) => (
+  prevList: Bookmark[]
+) => {
   return prevList.map((item) => {
     if (item.id === updateItem.id) {
       return {
@@ -54,6 +58,6 @@ const createListUpdateMutation = (updateItem: any) => (prevList: any[]) => {
   });
 };
 
-const createListRemoveMutation = (id: string) => (prevList: any[]) => {
+const createListRemoveMutation = (id: string) => (prevList: Bookmark[]) => {
   return prevList.filter((item) => item.id !== id);
 };

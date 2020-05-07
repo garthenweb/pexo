@@ -179,12 +179,11 @@ const taskRunner = async <U extends ResourceTask>(
   if (isGeneratorValue(req)) {
     return executeGeneratorEnhancer(req, resource, config);
   }
-  let updatesApplied = false;
+  const mutableOptions = { updatesApplied: false };
   if (isSyncValue(req) && typeof req === "function") {
-    const mutableOptions = { updatesApplied: false };
     req = req(createEnhancer(resource, config, mutableOptions));
   }
-  return req.then((result) => ({ result, updatesApplied }));
+  return req.then((result) => ({ result, ...mutableOptions }));
 };
 
 const createEnhancer = <U extends ResourceTask>(
@@ -198,10 +197,10 @@ const createEnhancer = <U extends ResourceTask>(
     executeRequestEnhancer(maybeResource, parentResource, config);
   const apply: EnhancerObject["apply"] = async (maybeResource, transformer) => {
     const result = await executeApplyEnhancer(
-      maybeResource,
+      transformer ? maybeResource : undefined,
       parentResource,
       config,
-      transformer
+      transformer ?? maybeResource
     );
     if (result) {
       options.updatesApplied = true;
@@ -356,9 +355,11 @@ const accessCachedResource = async <U extends ResourceTask>(
     return { result: undefined, cacheKey: undefined };
   }
 
+  console.log("asd", enhancedResource);
   try {
     return await executeResource({ ...enhancedResource, strategy }, config);
-  } catch {
+  } catch (e) {
+    console.log("error", e);
     // TODO return cache key from error object
     return { result: undefined, cacheKey: undefined };
   }
