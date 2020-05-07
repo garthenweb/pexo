@@ -3,11 +3,11 @@ import { RequestCreatorConfig } from "./request.types";
 
 export type ResourceId = string;
 
-type ResourceSimpleTask<T = unknown> = (...args: any[]) => Promise<T>;
+type ResourceSimpleTask<T> = (...args: any[]) => Promise<T>;
 
-type ResourceEnhancedTask<T = unknown> = (
+type ResourceEnhancedTask<T, R> = (
   ...args: any[]
-) => (ctx: EnhancerObject<T>) => Promise<T>;
+) => (ctx: EnhancerObject<R>) => Promise<T>;
 
 export type MaybeEnhancerResource<U extends ResourceTask> =
   | Promise<ResourceMethodConfig<U>>
@@ -21,7 +21,7 @@ interface Apply<U> {
   ): ResourceTaskReturnType<V>;
 }
 interface Apply<U> {
-  (transformer: (prev: U) => U): U;
+  <T = U>(transformer: (prev: T) => T): Promise<T>;
 }
 
 interface Retrieve<U> {
@@ -30,7 +30,7 @@ interface Retrieve<U> {
   ): ResourceTaskReturnType<V>;
 }
 interface Retrieve<U> {
-  (): U;
+  <T = U>(): Promise<T>;
 }
 interface Request<U> {
   <V extends ResourceTask>(
@@ -38,7 +38,7 @@ interface Request<U> {
   ): ResourceTaskReturnType<V>;
 }
 interface Request<U> {
-  (): U;
+  <T = U>(): Promise<T>;
 }
 
 export interface EnhancerObject<U> {
@@ -58,14 +58,14 @@ export type ResourceTaskReturnType<
     : T
 >;
 
-type ResourceEnhancedGeneratorTask<T = unknown> = (
+type ResourceEnhancedGeneratorTask<T> = (
   ...args: any[]
 ) => AsyncGenerator<unknown, T, unknown>;
 
-export type ResourceTask =
-  | ResourceSimpleTask
-  | ResourceEnhancedTask
-  | ResourceEnhancedGeneratorTask;
+export type ResourceTask<T = any, R = any> =
+  | ResourceSimpleTask<T>
+  | ResourceEnhancedTask<T, R>
+  | ResourceEnhancedGeneratorTask<T>;
 
 export type ResourceMethodConfig<U extends ResourceTask> = {
   __symbol: symbol;
@@ -96,20 +96,30 @@ export interface ResourceExecuteConfig extends RequestCreatorConfig {
   registerResourceUsage: (resourceId: ResourceId) => void;
 }
 
-type ResourceMethod<U extends ResourceTask> = (
-  ...args: Parameters<U>
-) => Promise<ResourceMethodConfig<U>>;
+type ResourceMethod<
+  ReadReturnType extends any = any,
+  U extends ResourceTask = ResourceTask<any, ReadReturnType>
+> = (...args: Parameters<U>) => Promise<ResourceMethodConfig<U>>;
 
 /* start create request resource overloads */
 export interface CreateRequestResource {
-  <R extends ResourceTask>(read: R, config?: ResourceCreatorConfig): {
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
+    read: R,
+    config?: ResourceCreatorConfig
+  ): {
     (...args: Parameters<R>): Promise<ResourceMethodConfig<R>>;
     read: ResourceMethod<R>;
   };
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: { read: R },
     config?: ResourceCreatorConfig
   ): {
@@ -119,7 +129,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: { update: U },
     config?: ResourceCreatorConfig
   ): {
@@ -128,7 +141,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: { create: C },
     config?: ResourceCreatorConfig
   ): {
@@ -137,7 +153,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: { delete: D },
     config?: ResourceCreatorConfig
   ): {
@@ -146,7 +165,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, C extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       read: R;
       create: C;
@@ -160,7 +183,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       read: R;
       update: U;
@@ -174,7 +201,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       read: R;
       delete: D;
@@ -188,7 +219,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       create: C;
       update: U;
@@ -201,7 +236,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       create: C;
       delete: D;
@@ -214,7 +253,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <U extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       update: U;
       delete: D;
@@ -227,7 +270,12 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, C extends ResourceTask, U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       read: R;
       update: U;
@@ -243,7 +291,12 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       read: R;
       update: U;
@@ -259,7 +312,12 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     tasks: {
       create: C;
       update: U;
@@ -275,10 +333,11 @@ export interface CreateRequestResource {
 
 export interface CreateRequestResource {
   <
-    R extends ResourceTask,
-    C extends ResourceTask,
-    U extends ResourceTask,
-    D extends ResourceTask
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
   >(
     tasks: {
       read: R;
@@ -297,7 +356,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     read: R,
     config?: ResourceCreatorConfig
@@ -308,7 +370,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: { read: R },
     config?: ResourceCreatorConfig
@@ -319,7 +384,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: { update: U },
     config?: ResourceCreatorConfig
@@ -329,7 +397,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: { create: C },
     config?: ResourceCreatorConfig
@@ -339,7 +410,10 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: { delete: D },
     config?: ResourceCreatorConfig
@@ -349,7 +423,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, C extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       read: R;
@@ -364,7 +442,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       read: R;
@@ -379,7 +461,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       read: R;
@@ -394,7 +480,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       create: C;
@@ -408,7 +498,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       create: C;
@@ -422,7 +516,11 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <U extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       update: U;
@@ -436,7 +534,12 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, C extends ResourceTask, U extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       read: R;
@@ -453,7 +556,12 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <R extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       read: R;
@@ -470,7 +578,12 @@ export interface CreateRequestResource {
 }
 
 export interface CreateRequestResource {
-  <C extends ResourceTask, U extends ResourceTask, D extends ResourceTask>(
+  <
+    ReadReturnType extends any = any,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
+  >(
     resourceId: ResourceId,
     tasks: {
       create: C;
@@ -487,10 +600,11 @@ export interface CreateRequestResource {
 
 export interface CreateRequestResource {
   <
-    R extends ResourceTask,
-    C extends ResourceTask,
-    U extends ResourceTask,
-    D extends ResourceTask
+    ReadReturnType extends any = any,
+    R extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    C extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    U extends ResourceTask = ResourceTask<any, ReadReturnType>,
+    D extends ResourceTask = ResourceTask<any, ReadReturnType>
   >(
     resourceId: ResourceId,
     tasks: {

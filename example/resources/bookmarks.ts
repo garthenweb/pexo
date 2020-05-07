@@ -1,32 +1,37 @@
-import { createRequestResource, retrieve, apply } from "../../src/request";
+import { createRequestResource } from "../../src/request";
 
 import { get, post, put, remove } from "../utils/api";
 
 const API_HOST = "http://localhost:3000/api";
 
-export const bookmarkResource = createRequestResource(
+interface Bookmark {
+  id: string;
+  name: string;
+}
+
+export const bookmarkResource = createRequestResource<Bookmark[]>(
   {
-    read: async function* (id?: string) {
+    read: (id?: string) => async ({ retrieve }) => {
       if (id) {
-        const list = yield retrieve();
+        const list = await retrieve();
         const item = list?.find((item) => item.id === id);
         return item ?? get(`${API_HOST}/bookmarks/${id}`);
       }
       return get(`${API_HOST}/bookmarks`);
     },
-    create: async function* (bookmark: any) {
+    create: (bookmark: Bookmark) => async ({ apply }) => {
       const request = post(`${API_HOST}/bookmarks`, bookmark);
-      yield apply(createListCreateMutation(await request));
+      await apply(createListCreateMutation(await request));
       return request;
     },
-    update: async function* (id: string, bookmark: any) {
+    update: (id: string, bookmark: Bookmark) => async ({ apply }) => {
       const request = put(`${API_HOST}/bookmarks/${id}`, bookmark);
-      yield apply(createListUpdateMutation(await request));
+      await apply(createListUpdateMutation(await request));
       return request;
     },
-    delete: async function* (id: string) {
+    delete: (id: string) => async ({ apply }) => {
       const request = remove(`${API_HOST}/bookmarks/${id}`);
-      yield apply(createListRemoveMutation(id));
+      await apply(createListRemoveMutation(id));
       return request;
     },
   },
