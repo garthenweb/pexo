@@ -3,13 +3,19 @@ import {
   ResourceTask,
   ResourceId,
   ResourceTaskReturnType,
+  PromiseValue,
 } from "./resource.types";
 import { AsyncCache, SyncCache } from "./caches";
+
+type DeepPromiseProps<T> = Promise<T> &
+  {
+    [P in keyof T]: DeepPromiseProps<T[P]>;
+  };
 
 export interface Request {
   <U extends ResourceTask>(
     resource: Promise<ResourceMethodConfig<U>>
-  ): ResourceTaskReturnType<U>;
+  ): DeepPromiseProps<PromiseValue<ResourceTaskReturnType<U>>>;
   clone: () => Request;
   reset: () => void;
   addResourceUpdatedListener: (cb: (updatedResourceId: string) => void) => void;
