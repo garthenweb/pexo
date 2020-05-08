@@ -14,11 +14,13 @@ export type MaybeEnhancerResource<U extends ResourceTask> =
   | any[]
   | undefined;
 
+export type PromiseValue<T> = T extends Promise<infer T> ? T : T;
+
 interface Apply<U> {
-  <V extends ResourceTask, T = ResourceTaskReturnType<V>>(
+  <V extends ResourceTask, T = PromiseValue<ResourceTaskReturnType<V>>>(
     maybeResource: MaybeEnhancerResource<V>,
     transformer: (prev: T) => T
-  ): ResourceTaskReturnType<V>;
+  ): Promise<T>;
 }
 interface Apply<U> {
   <T = U>(transformer: (prev: T) => T): Promise<T>;
@@ -50,13 +52,11 @@ export interface EnhancerObject<U> {
 export type ResourceTaskReturnType<
   U extends ResourceTask,
   T = ReturnType<U>
-> = Promise<
-  T extends (...args: any) => any
-    ? ReturnType<T>
-    : T extends AsyncGenerator<any, infer V, any>
-    ? V
-    : T
->;
+> = T extends (...args: any) => any
+  ? ReturnType<T>
+  : T extends AsyncGenerator<any, infer V, any>
+  ? V
+  : T;
 
 type ResourceEnhancedGeneratorTask<T> = (
   ...args: any[]

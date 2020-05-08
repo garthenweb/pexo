@@ -1,4 +1,9 @@
-import { ResourceMethodConfig, ResourceTask } from "./resource.types";
+import {
+  ResourceTask,
+  MaybeEnhancerResource,
+  ResourceTaskReturnType,
+  PromiseValue,
+} from "./resource.types";
 
 export const Enhancer = {
   RETRIEVE: Symbol("RETRIEVE"),
@@ -6,35 +11,32 @@ export const Enhancer = {
   REQUEST: Symbol("REQUEST"),
 };
 
-type EnhancerResourceType<U extends ResourceTask> =
-  | Promise<ResourceMethodConfig<U>>
-  | Parameters<U>;
-
 export type EnhancerType<U extends ResourceTask, T = undefined> = readonly [
   symbol,
-  EnhancerResourceType<U> | undefined,
+  MaybeEnhancerResource<U>,
   T
 ];
 
 export const retrieve = <U extends ResourceTask>(
-  resource?: EnhancerResourceType<U>
+  resource?: MaybeEnhancerResource<U>
 ): EnhancerType<U> => [Enhancer.RETRIEVE, resource, undefined];
 
 export const request = <U extends ResourceTask>(
-  resource?: Promise<ResourceMethodConfig<U>> | Parameters<U>
+  resource?: MaybeEnhancerResource<U>
 ) => [Enhancer.REQUEST, resource];
 
 interface Apply {
-  <T extends unknown, U extends ResourceTask>(
-    resource: EnhancerResourceType<U>,
-    transformer: (cachedResource: T) => T
-  ): EnhancerType<U, (cachedResource: T) => T>;
+  <V extends ResourceTask, T = PromiseValue<ResourceTaskReturnType<V>>>(
+    maybeResource: MaybeEnhancerResource<V>,
+    transformer: (prev: T) => T
+  ): EnhancerType<V, (cachedResource: T) => T>;
 }
 
 interface Apply {
-  <T extends unknown, U extends ResourceTask>(
-    transformer: (cachedResource: T) => T
-  ): EnhancerType<U, (cachedResource: T) => T>;
+  <T>(transformer: (prev: T) => T): EnhancerType<
+    ResourceTask<T>,
+    (cachedResource: T) => T
+  >;
 }
 
 export const apply: Apply = (...args: any) =>

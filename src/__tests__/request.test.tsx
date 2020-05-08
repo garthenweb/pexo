@@ -498,7 +498,7 @@ describe("request", () => {
             read: () => resolveList(),
             create: async function* (id: number) {
               const item = await createOne(id);
-              yield apply((list) => [...list, item]);
+              yield apply((list: any[]) => [...list, item]);
               return item;
             },
           },
