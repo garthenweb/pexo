@@ -522,6 +522,34 @@ describe("request", () => {
         expect(createOne).toHaveBeenCalledTimes(1);
         expect(resolveList).toHaveBeenCalledTimes(1);
       });
+
+      it("should work with generators and second return function", async () => {
+        const get = createRequestResource(
+          "test_resource_name",
+          () => Promise.resolve(1),
+          {
+            cacheable: true,
+          }
+        );
+        const getWrap1 = createRequestResource("test_resource_name_wrap1", {
+          update: () => async ({ apply }) => {
+            await apply(get(), (prev) => prev + 1);
+            return;
+          },
+        });
+        const getWrap2 = createRequestResource("test_resource_name_wrap2", {
+          update: async function* () {
+            yield apply(get(), (prev) => prev + 1);
+            return;
+          },
+        });
+
+        expect(await request(get())).toBe(1);
+        await request(getWrap1.update());
+        expect(await request(get())).toBe(2);
+        await request(getWrap2.update());
+        expect(await request(get())).toBe(3);
+      });
     });
     describe("with request", () => {
       it("should allow to request data from another resource", async () => {
@@ -545,22 +573,22 @@ describe("request", () => {
         });
         expect(createOne).toHaveBeenCalledWith(6, "token1234");
       });
-    });
 
-    it("should work with generators and second return function", async () => {
-      const get = createRequestResource("test_resource_name", () =>
-        Promise.resolve(1)
-      );
-      const getWrap1 = createRequestResource("test_resource_name_wrap1", {
-        read: () => async ({ request }) => request(get()),
+      it("should work with generators and second return function", async () => {
+        const get = createRequestResource("test_resource_name", () =>
+          Promise.resolve(1)
+        );
+        const getWrap1 = createRequestResource("test_resource_name_wrap1", {
+          read: () => async ({ request }) => request(get()),
+        });
+        const getWrap2 = createRequestResource("test_resource_name_wrap2", {
+          read: async function* () {
+            return (yield requestEnhancer(get())) as number;
+          },
+        });
+        expect(await request(getWrap1())).toBe(1);
+        expect(await request(getWrap2())).toBe(1);
       });
-      const getWrap2 = createRequestResource("test_resource_name_wrap2", {
-        read: async function* () {
-          return (yield requestEnhancer(get())) as number;
-        },
-      });
-      expect(await request(getWrap1())).toBe(1);
-      expect(await request(getWrap2())).toBe(1);
     });
   });
 });

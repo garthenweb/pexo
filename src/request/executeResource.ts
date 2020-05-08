@@ -355,7 +355,6 @@ const accessCachedResource = async <U extends ResourceTask>(
     return { result: undefined, cacheKey: undefined };
   }
 
-  console.log("asd", enhancedResource);
   try {
     return await executeResource({ ...enhancedResource, strategy }, config);
   } catch (e) {
