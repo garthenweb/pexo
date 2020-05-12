@@ -1,0 +1,15 @@
+{
+  "name": "@pexo/parcel-runtime-dynamic-imports",
+  "version": "0.0.0-alpha.1.1",
+  "description": "Dynamic import runtime for PeXo",
+  "main": "index.js",
+  "engines": {
+    "parcel": "^2.0.0-nightly.196",
+    "node": ">=12.x"
+  },
+  "dependencies": {
+    "@parcel/plugin": "^2.0.0-nightly.255"
+  },
+  "author": "Jannick Garthen",
+  "license": "MIT"
+}

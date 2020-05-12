@@ -1,0 +1,59 @@
+{
+  "name": "@pexo/example",
+  "version": "0.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "start": "pexo develop --server-entry ./server.tsx --client-entry ./client.tsx"
+  },
+  "targets": {
+    "server": {
+      "context": "node",
+      "includeNodeModules": false,
+      "sourceMap": true
+    },
+    "client": {
+      "context": "browser",
+      "sourceMap": true
+    }
+  },
+  "author": "Jannick Garthen <jannick.garthen@gmail.com>",
+  "license": "MIT",
+  "browserslist": [
+    "last 5 Chrome versions",
+    "last 5 Firefox versions"
+  ],
+  "engines": {
+    "parcel": "^2.0.0-nightly.196",
+    "node": ">=12.x"
+  },
+  "devDependencies": {
+    "@babel/core": "7.9.6",
+    "@babel/plugin-transform-react-jsx": "^7.9.4",
+    "@babel/preset-env": "^7.9.6",
+    "@babel/preset-typescript": "^7.9.0",
+    "@pexo/babel-transform": "^0.0.0-alpha.1",
+    "@pexo/cli": "^0.0.0-alpha.1",
+    "@pexo/parcel-runtime-dynamic-imports": "^0.0.0-alpha.1",
+    "@pexo/parcel-reporter-manifest": "^0.0.0-alpha.1",
+    "@types/commander": "^2.12.2",
+    "@types/supertest": "^2.0.9",
+    "jest": "^26.0.1",
+    "supertest": "^4.0.2",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "styled-components": "^5.1.0",
+    "@pexo/core": "^0.0.0-alpha.5",
+    "@pexo/request": "^0.0.0-alpha.3",
+    "express": "^4.17.1",
+    "isomorphic-fetch": "^2.2.1"
+  },
+  "alias": {
+    "@pexo/core": "../core/src/core.ts",
+    "@pexo/request": "../request/src/request.ts",
+    "@pexo/utils": "../utils/src/utils.ts"
+  }
+}

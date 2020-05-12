@@ -1,0 +1,30 @@
+{
+  "name": "@pexo/cli",
+  "version": "0.0.0-alpha.1.1",
+  "description": "Command line interface to start a Pexo application",
+  "author": "Jannick Garthen <jannick.garthen@gmail.com>",
+  "license": "MIT",
+  "source": "src/cli.ts",
+  "main": "bin/cli.js",
+  "targets": {
+    "main": {
+      "isLibrary": true,
+      "includeNodeModules": false,
+      "context": "node"
+    }
+  },
+  "bin": {
+    "pexo": "./bin/cli.js"
+  },
+  "engines": {
+    "parcel": "^2.0.0-nightly.196",
+    "node": ">=12.x"
+  },
+  "dependencies": {
+    "parcel": "^2.0.0-nightly.255",
+    "commander": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/commander": "^2.12.2"
+  }
+}

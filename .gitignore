@@ -1,26 +1,19 @@
-# See https://help.github.com/ignore-files/ for more about ignoring files.
-
-
+/packages/*/bin
+/packages/*/lib
 
 # dependencies
 
 /node_modules
-**/node_modules
-
-
+/packages/*/node_modules
 
 # testing
 
 /coverage
-/_pages
-
-
 
 # production
 
 /dist
-
-
+/packages/*/dist
 
 # misc
 
@@ -40,11 +33,8 @@
 
 .parcel-cache
 
-
-
 npm-debug.log*
 
 yarn-debug.log*
 
 yarn-error.log*
-

@@ -1,0 +1,37 @@
+{
+  "name": "@pexo/request",
+  "version": "0.0.0-alpha.3.1",
+  "description": "Pexo request module",
+  "author": "Jannick Garthen <jannick.garthen@gmail.com>",
+  "license": "MIT",
+  "source": "src/request.ts",
+  "main": "lib/request.js",
+  "browser": "lib/request.browser.js",
+  "types": "lib/request.d.ts",
+  "sideEffects": false,
+  "targets": {
+    "main": {
+      "isLibrary": true,
+      "includeNodeModules": false,
+      "context": "node",
+      "outputFormat": "commonjs"
+    },
+    "browser": {
+      "isLibrary": true,
+      "includeNodeModules": false,
+      "context": "browser",
+      "outputFormat": "commonjs"
+    }
+  },
+  "engines": {
+    "parcel": "^2.0.0-nightly.196",
+    "node": ">=12.x"
+  },
+  "dependencies": {
+    "@pexo/utils": "^0.0.0-alpha.3.1",
+    "object-hash": "^2.0.3"
+  },
+  "devDependencies": {
+    "@types/object-hash": "^1.3.1"
+  }
+}
