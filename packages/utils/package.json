@@ -1,0 +1,30 @@
+{
+  "name": "@pexo/utils",
+  "version": "0.0.0-alpha.3.1",
+  "description": "Shared utils for pexo",
+  "author": "Jannick Garthen <jannick.garthen@gmail.com>",
+  "license": "MIT",
+  "main": "lib/utils.js",
+  "source": "src/utils.ts",
+  "browser": "lib/utils.browser.js",
+  "types": "lib/utils.d.ts",
+  "sideEffects": false,
+  "targets": {
+    "main": {
+      "isLibrary": true,
+      "includeNodeModules": false,
+      "context": "node",
+      "outputFormat": "commonjs"
+    },
+    "browser": {
+      "isLibrary": true,
+      "includeNodeModules": false,
+      "context": "browser",
+      "outputFormat": "commonjs"
+    }
+  },
+  "engines": {
+    "parcel": "^2.0.0-nightly.196",
+    "node": ">=12.x"
+  }
+}

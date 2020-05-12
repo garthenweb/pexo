@@ -1,13 +1,13 @@
 {
   "plugins": [
+    "module:@pexo/babel-transform",
     [
       "@babel/plugin-transform-react-jsx",
       {
         "pragma": "React.createElement",
         "pragmaFrag": "React.Fragment"
       }
-    ],
-    "./src/cli/babel-pexo-transform"
+    ]
   ],
   "presets": [
     [
