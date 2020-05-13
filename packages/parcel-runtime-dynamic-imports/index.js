@@ -18,7 +18,6 @@ exports.default = new Runtime({
       return;
     }
 
-    const { rootDir } = options;
     let asyncDependencies = [];
     bundle.traverse((node) => {
       if (node.type !== "dependency") {
@@ -42,7 +41,7 @@ exports.default = new Runtime({
       );
       chunkMap.set(
         path
-          .relative(rootDir, assetFilePath)
+          .relative(process.cwd(), assetFilePath)
           .replace(REGEX_REMOVE_EXTENSION, ""),
         getLoaderRuntimes({
           bundle,

@@ -16,12 +16,12 @@ exports.default = new Reporter({
     ) {
       return;
     }
-    const { distDir, rootDir } = options;
+    const { distDir } = options;
     const serverDistDir = path.dirname(distDir);
     const manifest = {};
     for (let bundle of event.bundleGraph.getBundles()) {
       const mainBundleName = path
-        .relative(rootDir, bundle.getMainEntry().filePath)
+        .relative(process.cwd(), bundle.getMainEntry().filePath)
         .replace(REGEX_REMOVE_EXTENSION, "");
       manifest[mainBundleName] = manifest[mainBundleName] || {
         js: [],
