@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "target": "esnext",
     "lib": ["esnext", "DOM", "DOM.Iterable"],
     "types": ["jest", "node"],
     "sourceMap": true,
