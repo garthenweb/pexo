@@ -6,6 +6,7 @@ import {
   ResourceCreatorConfig,
 } from "./resource.types";
 import { REQUEST_RESOURCE } from "./isRequestResource";
+import { resolveNestedPromise } from "./resolveNestedPromise";
 
 type Method = "create" | "read" | "update" | "delete";
 
@@ -50,11 +51,15 @@ export const createRequestResource: CreateRequestResource = (
     if (typeof tasks[method] !== "function") {
       throw new Error(`Method \`${method}\` does not exist on this resource`);
     }
-    return async (...args: any): Promise<ResourceMethodConfig<any>> => ({
-      ...createResourceMethodConfig(method),
-      args: await Promise.all(args),
-      readResource: tasks.read ? createResourceMethodConfig("read") : undefined,
-    });
+    return async (...args: any): Promise<ResourceMethodConfig<any>> => {
+      return {
+        ...createResourceMethodConfig(method),
+        args: (await resolveNestedPromise(args)) as [],
+        readResource: tasks.read
+          ? createResourceMethodConfig("read")
+          : undefined,
+      };
+    };
   };
 
   const defaultTask: any =

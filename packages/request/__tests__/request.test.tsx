@@ -348,6 +348,27 @@ describe("request", () => {
       expect(await pGet2).toEqual({ id: 43 });
       expect(await pGetDependsOn1).toEqual(47);
     });
+
+    it("should allow to pass promises in nested objects", async () => {
+      const get = createRequestResource(
+        "test_resource_name",
+        ({ first, test: { second } }: any) =>
+          Promise.resolve({
+            first,
+            second,
+          })
+      );
+      expect(
+        await request(
+          get({
+            first: Promise.resolve(1),
+            test: {
+              second: Promise.resolve(2),
+            },
+          })
+        )
+      ).toEqual({ first: 1, second: 2 });
+    });
   });
 
   describe("advanced data manipulation", () => {
