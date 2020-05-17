@@ -2,6 +2,11 @@
 
 Let's you kickstart your website with a good set of performance defaults to improve the developer experience.
 
+![](https://img.shields.io/npm/l/@pexo/core.svg)
+[![](https://img.shields.io/npm/v/@pexo/core.svg)](https://www.npmjs.com/package/@pexo/core)
+[![Build Status](https://travis-ci.org/garthenweb/pexo.svg?branch=master)](https://travis-ci.org/garthenweb/pexo)
+[![Coverage Status](https://coveralls.io/repos/github/garthenweb/pexo/badge.svg?branch=master)](https://coveralls.io/github/garthenweb/pexo?branch=master)
+
 **Main focus and benefits are**
 
 - comes out of the box with server side rendering and data fetching
@@ -13,11 +18,6 @@ Let's you kickstart your website with a good set of performance defaults to impr
 - integrated two layer cache for view state and domain entities for fast navigation between pages on the client and the server
 - clear separation between view model and domain model for well structured code
 - does not require a specific backend technology, works with e.g. graphql and rest apis
-
-![](https://img.shields.io/npm/l/@pexo/core.svg)
-[![](https://img.shields.io/npm/v/@pexo/core.svg)](https://www.npmjs.com/package/@pexo/core)
-[![Build Status](https://travis-ci.org/garthenweb/pexo.svg?branch=master)](https://travis-ci.org/garthenweb/pexo)
-[![Coverage Status](https://coveralls.io/repos/github/garthenweb/pexo/badge.svg?branch=master)](https://coveralls.io/github/garthenweb/pexo?branch=master)
 
 **⚠️ This project is an early stage and not stable. We don't recommend shipping it to production (yet) ⚠️**
 
