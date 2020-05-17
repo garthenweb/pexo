@@ -611,6 +611,25 @@ describe("request", () => {
         expect(await request(getWrap1())).toBe(1);
         expect(await request(getWrap2())).toBe(1);
       });
+
+      it("should return nested promises for second function enhancer", async () => {
+        const get = createRequestResource("test_resource_name", () =>
+          Promise.resolve({
+            a: 1,
+            b: 2,
+            c: {
+              d: 3,
+            },
+          })
+        );
+        const getWrap1 = createRequestResource("test_resource_name_wrap1", {
+          read: () => async ({ request }) => {
+            const req = request(get());
+            return (await req.a) + (await req.b) + (await req.c.d);
+          },
+        });
+        expect(await request(getWrap1())).toBe(6);
+      });
     });
   });
 });

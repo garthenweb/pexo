@@ -6,11 +6,7 @@ import {
   PromiseValue,
 } from "./resource.types";
 import { AsyncCache, SyncCache } from "./caches";
-
-type DeepPromiseProps<T> = Promise<T> &
-  {
-    [P in keyof T]: DeepPromiseProps<T[P]>;
-  };
+import { DeepPromiseProps } from "./createNestedPromise";
 
 export interface Request {
   <U extends ResourceTask>(

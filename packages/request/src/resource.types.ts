@@ -1,11 +1,12 @@
 import { CacheStrategies } from "./executeResource";
 import { RequestCreatorConfig } from "./request.types";
+import { DeepPromiseProps } from "./createNestedPromise";
 
 export type ResourceId = string;
 
 type ResourceSimpleTask<T> = (...args: any[]) => Promise<T>;
 
-type ResourceEnhancedTask<T, R> = (
+type ResourceEnhancedTask<T, R extends ResourceTask> = (
   ...args: any[]
 ) => (ctx: EnhancerObject<R>) => Promise<T>;
 
@@ -16,37 +17,37 @@ export type MaybeEnhancerResource<U extends ResourceTask> =
 
 export type PromiseValue<T> = T extends Promise<infer T> ? T : T;
 
-interface Apply<U> {
+export interface EnhancerApply<U> {
   <V extends ResourceTask, T = PromiseValue<ResourceTaskReturnType<V>>>(
     maybeResource: MaybeEnhancerResource<V>,
     transformer: (prev: T) => T
-  ): Promise<T>;
+  ): DeepPromiseProps<T>;
 }
-interface Apply<U> {
-  <T = U>(transformer: (prev: T) => T): Promise<T>;
-}
-
-interface Retrieve<U> {
-  <V extends ResourceTask>(
-    maybeResource: MaybeEnhancerResource<V>
-  ): ResourceTaskReturnType<V>;
-}
-interface Retrieve<U> {
-  <T = U>(): Promise<T>;
-}
-interface Request<U> {
-  <V extends ResourceTask>(
-    maybeResource: MaybeEnhancerResource<V>
-  ): ResourceTaskReturnType<V>;
-}
-interface Request<U> {
-  <T = U>(): Promise<T>;
+export interface EnhancerApply<U> {
+  <T = U>(transformer: (prev: T) => T): DeepPromiseProps<T>;
 }
 
-export interface EnhancerObject<U> {
-  request: Request<U>;
-  retrieve: Retrieve<U>;
-  apply: Apply<U>;
+export interface EnhancerRetrieve<U> {
+  <V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>
+  ): DeepPromiseProps<PromiseValue<ResourceTaskReturnType<V>>>;
+}
+export interface EnhancerRetrieve<U> {
+  <T = U>(): DeepPromiseProps<T>;
+}
+export interface EnhancerRequest<U> {
+  <V extends ResourceTask>(
+    maybeResource: MaybeEnhancerResource<V>
+  ): DeepPromiseProps<PromiseValue<ResourceTaskReturnType<V>>>;
+}
+export interface EnhancerRequest<U> {
+  <T = U>(): DeepPromiseProps<T>;
+}
+
+export interface EnhancerObject<U extends ResourceTask> {
+  request: EnhancerRequest<U>;
+  retrieve: EnhancerRetrieve<U>;
+  apply: EnhancerApply<U>;
 }
 
 export type ResourceTaskReturnType<

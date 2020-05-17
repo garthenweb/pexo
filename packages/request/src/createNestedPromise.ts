@@ -10,3 +10,8 @@ const nestedPromiseHandler = {
 export const createNestedPromise = <T>(p: Promise<T>): any => {
   return new Proxy(p, nestedPromiseHandler);
 };
+
+export type DeepPromiseProps<T> = Promise<T> &
+  {
+    [P in keyof T]: DeepPromiseProps<T[P]>;
+  };

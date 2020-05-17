@@ -1,4 +1,4 @@
-import { isSyncValue, isGeneratorValue  } from "@pexo/utils";
+import { isSyncValue, isGeneratorValue } from "@pexo/utils";
 import { Enhancer } from "./resourceEnhancer";
 import {
   ResourceMethodConfig,
@@ -6,8 +6,12 @@ import {
   ResourceExecuteConfig,
   MaybeEnhancerResource,
   EnhancerObject,
+  EnhancerRetrieve,
+  EnhancerRequest,
+  EnhancerApply,
 } from "./resource.types";
 import { isRequestResource } from "./isRequestResource";
+import { createNestedPromise } from "./createNestedPromise";
 
 export enum CacheStrategies {
   CacheFirst,
@@ -190,21 +194,29 @@ const createEnhancer = <U extends ResourceTask>(
   config: ResourceExecuteConfig,
   options: { updatesApplied: boolean }
 ) => {
-  const retrieve: EnhancerObject["retrieve"] = (maybeResource) =>
-    executeRetrieveEnhancer(maybeResource, parentResource, config);
-  const request: EnhancerObject["request"] = (maybeResource) =>
-    executeRequestEnhancer(maybeResource, parentResource, config);
-  const apply: EnhancerObject["apply"] = async (maybeResource, transformer) => {
-    const result = await executeApplyEnhancer(
-      transformer ? maybeResource : undefined,
-      parentResource,
-      config,
-      transformer ?? maybeResource
+  const retrieve: EnhancerRetrieve<U> = (maybeResource?: any) =>
+    createNestedPromise(
+      executeRetrieveEnhancer(maybeResource, parentResource, config)
     );
-    if (result) {
-      options.updatesApplied = true;
-    }
-    return result;
+  const request: EnhancerRequest<U> = (maybeResource?: any) =>
+    createNestedPromise(
+      executeRequestEnhancer(maybeResource, parentResource, config)
+    );
+  const apply: EnhancerApply<U> = async (
+    maybeResource: any,
+    transformer?: any
+  ) => {
+    return createNestedPromise(
+      executeApplyEnhancer(
+        transformer ? maybeResource : undefined,
+        parentResource,
+        config,
+        transformer ?? maybeResource
+      ).then((res) => {
+        options.updatesApplied = true;
+        return res;
+      })
+    );
   };
   return { request, retrieve, apply };
 };
