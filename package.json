@@ -48,7 +48,7 @@
     "@babel/preset-env": "^7.9.6",
     "@babel/preset-typescript": "^7.9.0",
     "coveralls": "^3.1.0",
-    "parcel": "^2.0.0-nightly.266",
+    "parcel": "2.0.0-nightly.266",
     "typescript": "^3.8.3"
   }
 }
