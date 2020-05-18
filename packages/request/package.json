@@ -1,6 +1,6 @@
 {
   "name": "@pexo/request",
-  "version": "0.0.0-alpha.3.2",
+  "version": "0.0.0-alpha.3.3",
   "description": "Pexo request module",
   "author": "Jannick Garthen <jannick.garthen@gmail.com>",
   "license": "MIT",
