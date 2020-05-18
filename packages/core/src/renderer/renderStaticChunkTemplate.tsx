@@ -1,9 +1,11 @@
 import React, { ReactNode } from "react";
 import ReactDOMServer from "react-dom/server";
+import { ServerStyleSheet } from "styled-components";
 import {
   ServerChunkRegisterProvider,
   RegistryItem,
 } from "../context/ServerChunkRegisterContext";
+import { Plugin } from "../plugins";
 
 type RenderPartial = "header" | "footer" | "routes";
 
@@ -11,6 +13,7 @@ interface Config {
   createApp: () => JSX.Element;
   createAppContext: (node: ReactNode) => JSX.Element;
   shouldRenderRoutesOnly?: RenderPartial;
+  plugins: Plugin[];
 }
 
 export interface ChunkTemplate extends Partial<RegistryItem<any, any>> {
@@ -24,17 +27,30 @@ export const renderStaticChunkTemplate = ({
   createAppContext,
   createApp,
   shouldRenderRoutesOnly,
+  plugins,
 }: Config): ChunkTemplate[] => {
   const registry = new Map<string, RegistryItem<any, any>>();
-  const template = deletePartial(
-    ReactDOMServer.renderToString(
-      <ServerChunkRegisterProvider registry={registry}>
-        {createAppContext(createApp())}
-      </ServerChunkRegisterProvider>
-    ),
-    shouldRenderRoutesOnly
+  const appNode = (
+    <ServerChunkRegisterProvider registry={registry}>
+      {createAppContext(createApp())}
+    </ServerChunkRegisterProvider>
   );
-  return getOrderedChunkIdsFromTemplate(template).map((chunk) => {
+  let template = "";
+  if (plugins.includes("styled-components")) {
+    const sheet = new ServerStyleSheet();
+    try {
+      template = ReactDOMServer.renderToString(sheet.collectStyles(appNode));
+      template = sheet.getStyleTags() + template;
+    } finally {
+      sheet.seal();
+    }
+  } else {
+    template = ReactDOMServer.renderToString(appNode);
+  }
+
+  return getOrderedChunkIdsFromTemplate(
+    deletePartial(template, shouldRenderRoutesOnly)
+  ).map((chunk) => {
     const chunkData = registry.get(chunk.id!);
     return {
       ...chunkData,

@@ -1,10 +1,15 @@
+/**
+ * @jest-environment node
+ */
 import React from "react";
 import request from "supertest";
+import styled from "styled-components";
 import { TestingViewChunk } from "../src/components";
 import { createMiddlewareWithComponent, wait } from "./utils";
 import BaseChunk from "../src/components/BaseChunk";
 import Route from "../src/components/Route";
 import Routes from "../src/components/Routes";
+import { createPluginStyledComponents } from "../src/core";
 
 describe("The server", () => {
   let lastEnv = {};
@@ -577,6 +582,54 @@ describe("The server", () => {
           expect(res.text).toContain("<div>Footer</div>");
           expect(res.text).toContain("</html>");
           expect(res.text).not.toContain("data-px-server-template-routes");
+        });
+    });
+  });
+  describe("plugin styled components", () => {
+    it("should render styles for chunks", async () => {
+      const StyledDiv = styled.div`
+        color: red;
+      `;
+      const { app, logger } = createMiddlewareWithComponent(
+        () => (
+          <TestingViewChunk
+            loader={() => ({ View: () => <StyledDiv data-testid="div" /> })}
+          />
+        ),
+        {
+          plugins: [createPluginStyledComponents()],
+        }
+      );
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain("color:red;");
+          expect(res.text).toContain('<style data-styled="true"');
+          expect(res.text).toContain('<div data-testid="div" class="');
+        });
+    });
+    it("should render styles for template", async () => {
+      const StyledDiv = styled.div`
+        color: red;
+      `;
+      const { app, logger } = createMiddlewareWithComponent(
+        () => <StyledDiv data-testid="div" />,
+        {
+          plugins: [createPluginStyledComponents()],
+        }
+      );
+
+      await request(app)
+        .get("/")
+        .expect(200)
+        .expect((res) => {
+          expect(logger.error).not.toHaveBeenCalled();
+          expect(res.text).toContain("color:red;");
+          expect(res.text).toContain('<style data-styled="true"');
+          expect(res.text).toContain('<div data-testid="div" class="');
         });
     });
   });

@@ -6,9 +6,10 @@ import { RedirectChunkViewProps } from "./components/Redirect";
 export { default as Link } from "./components/Link";
 export { default as Route } from "./components/Route";
 
+let testIdCursor = 0;
 export const TestingViewChunk = <InputProps extends {}, ViewState extends {}>(
   props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">
-) => <BaseChunk name={performance.now().toString()} {...props} />;
+) => <BaseChunk name={(testIdCursor++).toString()} {...props} />;
 
 export const Chunk = <InputProps extends {}, ViewState extends {}>(
   props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">

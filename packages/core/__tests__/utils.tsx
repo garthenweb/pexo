@@ -6,10 +6,14 @@ import { createStreamMiddleware } from "../src/server";
 import { mount, unmount } from "../src/client";
 import { ViewStateCache } from "../src/types/ViewStateCache";
 import { Logger } from "../src/utils/logger";
+import { Plugin } from "../src/plugins";
 
 export const createMiddlewareWithComponent = (
   Component: React.ComponentType,
-  { viewStateCache }: { viewStateCache?: ViewStateCache } = {}
+  {
+    viewStateCache,
+    plugins,
+  }: { viewStateCache?: ViewStateCache; plugins?: Plugin[] } = {}
 ) => {
   const app = express();
   const logger = {
@@ -40,6 +44,7 @@ export const createMiddlewareWithComponent = (
       requestManifest,
       logger,
       viewStateCache,
+      plugins,
     })
   );
   return { app, logger };

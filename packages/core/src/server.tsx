@@ -77,6 +77,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         shouldRenderRoutesOnly: shouldRenderRoutesOnly
           ? "routes"
           : renderTemplate,
+        plugins,
       });
 
       let headConfig = {};
