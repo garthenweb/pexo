@@ -8,8 +8,9 @@ interface Options {
   serverEntry: string;
 }
 
+program.version("0.0.0");
+
 program
-  .version("0.0.0")
   .command("develop")
   .description("start project for development")
   .requiredOption(
@@ -42,18 +43,52 @@ program
     });
   });
 
-const spawnClientWatch = (entry: string) => {
+program
+  .command("build")
+  .description("build project for production")
+  .requiredOption(
+    "--server-entry <path>",
+    "entry JavaScript file for the server"
+  )
+  .requiredOption(
+    "--client-entry <path>",
+    "entry JavaScript file for the client"
+  )
+  .action(async ({ clientEntry, serverEntry }: Options) => {
+    const fullServerEntry = path.join(process.cwd(), serverEntry);
+    const fullClientEntry = path.join(process.cwd(), clientEntry);
+    console.log("");
+    console.log("[PeXo] BUILD APPLICATION");
+    console.log("");
+    const parcelServerProcess = spawnServerBuildDev(
+      fullServerEntry,
+      "production"
+    );
+    const parcelClientProcess = spawnClientWatch(fullClientEntry, "production");
+    const clientDone = new Promise((resolve, reject) =>
+      parcelClientProcess.on("exit", (err) => (err ? reject(err) : resolve()))
+    );
+    const serverDone = new Promise((resolve, reject) =>
+      parcelServerProcess.on("exit", (err) => (err ? reject(err) : resolve()))
+    );
+    await Promise.all([clientDone, serverDone]);
+    console.log("");
+    console.log("[PeXo] BUILD DONE");
+    console.log("");
+  });
+
+const spawnClientWatch = (entry: string, mode = "development") => {
   const childProcess = spawn(
     parcelExecPath,
     [
-      "watch",
+      mode === "development" ? "watch" : "build",
       "--dist-dir",
       path.join(distDir, "public"),
       "--public-url",
       "/public",
       "--target",
       "client",
-      "--watch-for-stdin",
+      mode === "development" ? "--watch-for-stdin" : "",
       "--cache-dir",
       ".parcel-cache/client",
       "--no-cache",
@@ -63,7 +98,11 @@ const spawnClientWatch = (entry: string) => {
       shell: true,
       stdio: ["pipe", "inherit", "inherit"],
       env: Object.assign(
-        { PEXO_CONTEXT: "client", VERSION: generateVersionHash() },
+        {
+          PEXO_CONTEXT: "client",
+          VERSION: generateVersionHash(),
+          NODE_ENV: mode,
+        },
         process.env
       ),
     }
@@ -71,7 +110,7 @@ const spawnClientWatch = (entry: string) => {
   return childProcess;
 };
 
-const spawnServerBuildDev = (entry: string) => {
+const spawnServerBuildDev = (entry: string, mode = "development") => {
   const childProcess = spawn(
     parcelExecPath,
     [
@@ -82,7 +121,7 @@ const spawnServerBuildDev = (entry: string) => {
       "server",
       "--cache-dir",
       ".parcel-cache/server",
-      "--no-minify",
+      mode === "development" ? "--no-minify" : "",
       "--no-cache",
       entry,
     ],
@@ -90,7 +129,11 @@ const spawnServerBuildDev = (entry: string) => {
       shell: true,
       stdio: ["pipe", "inherit", "inherit"],
       env: Object.assign(
-        { PEXO_CONTEXT: "server", VERSION: generateVersionHash() },
+        {
+          PEXO_CONTEXT: "server",
+          VERSION: generateVersionHash(),
+          NODE_ENV: mode,
+        },
         process.env
       ),
     }

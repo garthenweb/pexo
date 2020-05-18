@@ -20,19 +20,22 @@ exports.default = new Reporter({
     const serverDistDir = path.dirname(distDir);
     const manifest = {};
     for (let bundle of event.bundleGraph.getBundles()) {
-      const mainBundleName = path
-        .relative(process.cwd(), bundle.getMainEntry().filePath)
-        .replace(REGEX_REMOVE_EXTENSION, "");
-      manifest[mainBundleName] = manifest[mainBundleName] || {
-        js: [],
-        css: [],
-        isEntry: bundle.isEntry,
-        isWorker: bundle.env.isWorker(),
-      };
-      if (bundle.type === "js" || bundle.type === "css") {
-        manifest[mainBundleName][bundle.type].push(
-          path.relative(serverDistDir, bundle.filePath)
-        );
+      const mainEntryBundle = bundle.getMainEntry();
+      if (mainEntryBundle) {
+        const mainBundleName = path
+          .relative(process.cwd(), mainEntryBundle.filePath)
+          .replace(REGEX_REMOVE_EXTENSION, "");
+        manifest[mainBundleName] = manifest[mainBundleName] || {
+          js: [],
+          css: [],
+          isEntry: bundle.isEntry,
+          isWorker: bundle.env.isWorker(),
+        };
+        if (bundle.type === "js" || bundle.type === "css") {
+          manifest[mainBundleName][bundle.type].push(
+            path.relative(serverDistDir, bundle.filePath)
+          );
+        }
       }
     }
 
