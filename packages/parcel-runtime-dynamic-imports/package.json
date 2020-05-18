@@ -8,7 +8,7 @@
     "node": ">=12.x"
   },
   "dependencies": {
-    "@parcel/plugin": "^2.0.0-nightly.264"
+    "@parcel/plugin": "2.0.0-nightly.266"
   },
   "author": "Jannick Garthen",
   "license": "MIT"
