@@ -6,21 +6,15 @@
   "license": "MIT",
   "main": "lib/utils.js",
   "source": "src/utils.ts",
-  "browser": "lib/utils.browser.js",
+  "module": "lib/utils.esm.js",
   "types": "lib/utils.d.ts",
   "sideEffects": false,
   "targets": {
     "main": {
-      "isLibrary": true,
-      "includeNodeModules": false,
-      "context": "node",
-      "outputFormat": "commonjs"
+      "isLibrary": true
     },
-    "browser": {
-      "isLibrary": true,
-      "includeNodeModules": false,
-      "context": "browser",
-      "outputFormat": "commonjs"
+    "module": {
+      "isLibrary": true
     }
   },
   "engines": {

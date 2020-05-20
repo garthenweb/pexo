@@ -10,13 +10,7 @@ echo
 echo "Building default targets..."
 echo
 
-npx parcel build --no-cache --no-minify ./packages/request ./packages/utils ./packages/core
-
-echo
-echo "Buildig main targets..."
-echo
-
-npx parcel build --target main --no-cache --no-minify ./packages/cli ./packages/request ./packages/utils ./packages/core
+npx parcel build --no-cache --no-minify ./packages/cli ./packages/request ./packages/utils ./packages/core
 
 echo
 echo "Generating remaining types..."
