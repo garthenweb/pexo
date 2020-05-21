@@ -633,4 +633,25 @@ describe("The server", () => {
         });
     });
   });
+
+  it("should should allow to disable server side rendering via query parameter", async () => {
+    const { app, logger } = createMiddlewareWithComponent(() => (
+      <>
+        <div>1</div>
+        <div>2</div>
+        <div>3</div>
+        <div>4</div>
+      </>
+    ));
+
+    await request(app)
+      .get("/?ssr=0")
+      .expect(200)
+      .expect((res) => {
+        expect(logger.error).not.toHaveBeenCalled();
+        expect(res.text).toContain(
+          "<main><script data-px-runtime>window.__px = window.__px || []; window.__px.push('start')</script></main>"
+        );
+      });
+  });
 });

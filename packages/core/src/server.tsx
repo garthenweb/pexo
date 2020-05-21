@@ -132,7 +132,7 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
       }
 
       if (disableServerSideRendering && !shouldRenderRoutesOnly) {
-        res.write(READY_EVENT + htmlEnd);
+        res.write(READY_EVENT + htmlEnd(""));
         res.end();
         logger.info(`End response for request with url \`${req.url}\``);
         return;
