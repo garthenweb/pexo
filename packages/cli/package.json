@@ -21,7 +21,7 @@
     "node": ">=12.x"
   },
   "dependencies": {
-    "parcel": "2.0.0-nightly.275",
+    "parcel": "2.0.0-nightly.273",
     "commander": "^5.1.0"
   },
   "devDependencies": {
