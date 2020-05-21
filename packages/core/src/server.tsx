@@ -2,7 +2,7 @@ import React from "react";
 import type express from "express";
 import { StaticRouter } from "react-router-dom";
 import { exists } from "@pexo/utils";
-import { createRequest } from "@pexo/request";
+import { createRequest, createAsyncCache, AsyncCache } from "@pexo/request";
 import { PxGlobalServerProvider } from "./context/GlobalContext";
 import { renderStaticChunkTemplate } from "./renderer/renderStaticChunkTemplate";
 import { renderToChunkStream } from "./renderer/renderToChunkStream";
@@ -15,7 +15,10 @@ import {
   createDefaultManifestRequester,
 } from "./utils/requestManifest";
 import { getManifestAssetsByChunks } from "./utils/getManifestAssetsByChunks";
-import { getHydrationChunkScript } from "./utils/getHydrationChunkScript";
+import {
+  getHydrationChunkScript,
+  getHydrationResourceScript,
+} from "./utils/hydrationScripts";
 import { Plugin } from "./plugins";
 import { READY_EVENT, HACK_FIX_UMD_REQUIRE_CALL } from "./runtime/snippets";
 import { renderHeadToString } from "./renderer/renderHead";
@@ -24,6 +27,7 @@ interface MiddlewareConfig {
   createApp: () => JSX.Element;
   logger?: Logger;
   viewStateCache?: ViewStateCache;
+  resourceCache?: AsyncCache;
   requestManifest?: () => Promise<Manifest>;
   plugins?: Plugin[];
 }
@@ -33,11 +37,12 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
     createApp,
     logger = createDefaultLogger(),
     viewStateCache,
+    resourceCache = createAsyncCache(),
     requestManifest = createDefaultManifestRequester(logger),
     plugins = [],
   } = config;
-  const request = createRequest();
   return async (req: express.Request, res: express.Response) => {
+    const request = createRequest({ cache: resourceCache });
     logger.info(`Receive request with url \`${req.url}\``);
     const disableServerSideRendering = req.query.ssr === "0";
     const navPreloadHeader = req.headers[
@@ -141,12 +146,15 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
         utils: { request },
       });
       stream.pipe(res, { end: false });
-      stream.on("end", () => {
+      stream.on("end", async () => {
         if (!renderHead) {
           res.write(hydrationChunkScript);
         }
         if (!shouldRenderRoutesOnly && renderTemplate !== "header") {
-          res.write(READY_EVENT + htmlEnd);
+          res.write(READY_EVENT);
+          res.write(
+            htmlEnd(getHydrationResourceScript(await resourceCache.entries()))
+          );
         }
         res.end();
         logger.info(`End response for request with url \`${req.url}\``);
@@ -165,8 +173,10 @@ const htmlStart = (header: string) =>
   <body>
     <main>
 `.trim();
-const htmlEnd = `
+const htmlEnd = (resources: string) =>
+  `
     </main>
+    ${resources}
   </body>
 </html>
 `.trim();

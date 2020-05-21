@@ -11,8 +11,20 @@
     "suppressImplicitAnyIndexErrors": true,
     "noUnusedLocals": true,
     "allowSyntheticDefaultImports": true,
-    "downlevelIteration": false,
-    "noEmit": true
+    "downlevelIteration": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@pexo/core": ["packages/core/src/core.ts"],
+      "@pexo/request": ["packages/request/src/request.ts"],
+      "@pexo/utils": ["packages/utils/src/utils.ts"]
+    }
   },
-  "exclude": ["node_modules", "dist", "/packages/*/bin", "/packages/*/lib"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "lib",
+    "./packages/*/bin",
+    "./packages/*/lib"
+  ]
 }

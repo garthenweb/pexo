@@ -7,6 +7,7 @@ export interface AsyncCache {
   get: (key: string) => Promise<CacheItem<any> | undefined>;
   set: <T = unknown>(key: string, item: CacheItem<T>) => Promise<void>;
   delete: (key: string) => Promise<void>;
+  entries: () => Promise<(readonly [string, CacheItem<any>])[]>;
 }
 
 export interface SyncCache {
@@ -25,6 +26,13 @@ export const createAsyncCache = (): AsyncCache => {
     },
     delete: async (key: string) => {
       cache.delete(key);
+    },
+    entries: () => {
+      return Promise.all(
+        Array.from(cache.entries()).map(
+          async ([key, asyncValue]) => [key, await asyncValue] as const
+        )
+      );
     },
   };
 };

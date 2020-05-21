@@ -1,6 +1,7 @@
 import React from "react";
 import express from "express";
 import { act } from "react-dom/test-utils";
+import request from "supertest";
 
 import { createStreamMiddleware } from "../src/server";
 import { mount, unmount } from "../src/client";
@@ -85,6 +86,57 @@ export const createRendererWithComponent = (
       logger,
     });
   });
+
+export const createHybridWithComponent = (
+  Application: React.ComponentType,
+  {
+    testClient,
+    testServer,
+  }: {
+    testClient: (container: Element) => void;
+    testServer?: (res: request.Response) => void;
+  }
+) => {
+  const viewStateCache = new Map();
+  const { app, logger } = createMiddlewareWithComponent(Application, {
+    viewStateCache,
+  });
+
+  return new Promise(async (resolve, reject) => {
+    await request(app)
+      .get("/")
+      .expect("Content-Type", "text/html")
+      .expect(200)
+      .expect(async (res) => {
+        expect(logger.error).not.toHaveBeenCalled();
+        await testServer?.(res);
+        process.browser = true;
+        let clean: () => void;
+        try {
+          const mainStart = res.text.indexOf("<body");
+          const mainEnd = res.text.indexOf("</body>");
+          // const div = document.createElement("div");
+          document.body.innerHTML = res.text.slice(mainStart, mainEnd + 7);
+          const container = document.body.querySelector("main");
+          ({ clean } = await createRendererWithComponent(
+            Application,
+            container!,
+            { viewStateCache }
+          ));
+
+          await testClient(container!);
+          resolve();
+        } catch (error) {
+          reject(error);
+        } finally {
+          process.browser = void 0;
+          if (clean!) {
+            clean!();
+          }
+        }
+      });
+  });
+};
 
 export const wait = (time: number) =>
   new Promise((resolve) => setTimeout(resolve, time));
