@@ -17,7 +17,7 @@ import {
 import { getManifestAssetsByChunks } from "./utils/getManifestAssetsByChunks";
 import { getHydrationChunkScript } from "./utils/getHydrationChunkScript";
 import { Plugin } from "./plugins";
-import { READY_EVENT } from "./runtime/snippets";
+import { READY_EVENT, HACK_FIX_UMD_REQUIRE_CALL } from "./runtime/snippets";
 import { renderHeadToString } from "./renderer/renderHead";
 
 interface MiddlewareConfig {
@@ -161,7 +161,7 @@ const htmlStart = (header: string) =>
   `
 <!doctype html>
 <html>
-  <head><meta charset="UTF-8">${header}</head>
+  <head><meta charset="UTF-8">${HACK_FIX_UMD_REQUIRE_CALL}${header}</head>
   <body>
     <main>
 `.trim();
