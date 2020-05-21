@@ -26,7 +26,7 @@ describe("A hybrid app", () => {
         <>
           <BaseChunk
             multiplicate={3}
-            name="test"
+            $$name="test"
             loader={() => ({
               View: ({ bar, foo }: { bar: number; foo: number }) => (
                 <section>
@@ -74,7 +74,7 @@ describe("A hybrid app", () => {
         <>
           <BaseChunk
             multiplicate={3}
-            name="test"
+            $$name="test"
             loader={() => ({
               View: ({ value }: { value: number }) => {
                 const request = useRequest();

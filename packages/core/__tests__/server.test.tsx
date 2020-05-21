@@ -252,7 +252,7 @@ describe("The server", () => {
         () => (
           <>
             <BaseChunk
-              name="test"
+              $$name="test"
               multiplicate={2}
               loader={() => ({
                 View: ({ bar, foo }: { bar: number; foo: number }) =>
@@ -300,7 +300,7 @@ describe("The server", () => {
         <>
           <BaseChunk
             redirect
-            name="chunkname-1.tsx"
+            $$name="chunkname-1.tsx"
             loader={() => ({
               generateViewState: () => Promise.resolve(),
             })}

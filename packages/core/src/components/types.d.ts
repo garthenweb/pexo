@@ -24,7 +24,7 @@ export type Loader<InputProps, ViewState> = (
 ) => MaybeAsyncChunkModule<InputProps, ViewState>;
 
 type BaseProps<InputProps, ViewState> = {
-  name: string;
+  $$name: string;
   loader: Loader<InputProps, ViewState>;
   redirect?: boolean;
   head?: boolean;

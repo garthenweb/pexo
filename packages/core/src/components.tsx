@@ -8,32 +8,32 @@ export { default as Route } from "./components/Route";
 
 let testIdCursor = 0;
 export const TestingViewChunk = <InputProps extends {}, ViewState extends {}>(
-  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">
-) => <BaseChunk name={(testIdCursor++).toString()} {...props} />;
+  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "$$name">
+) => <BaseChunk $$name={(testIdCursor++).toString()} {...props} />;
 
 export const Chunk = <InputProps extends {}, ViewState extends {}>(
-  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">
+  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "$$name">
 ) => {
-  // name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
-  return <BaseChunk name="" {...props} />;
+  // $$name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
+  return <BaseChunk $$name="" {...props} />;
 };
 
 export const RedirectChunk = <
   InputProps extends {},
   ViewState = RedirectChunkViewProps
 >(
-  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">
+  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "$$name">
 ) => {
-  // name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
-  return <BaseChunk name="" {...props} redirect />;
+  // $$name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
+  return <BaseChunk $$name="" {...props} redirect />;
 };
 
 export const HeadChunk = <
   InputProps extends {},
   ViewState = RedirectChunkViewProps
 >(
-  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "name">
+  props: InputProps & Omit<BaseProps<InputProps, ViewState>, "$$name">
 ) => {
-  // name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
-  return <BaseChunk name="" {...props} head />;
+  // $$name prop will always be passed in case babel is in place and therefore override the empty string, it is just here to make typescript happy
+  return <BaseChunk $$name="" {...props} head />;
 };

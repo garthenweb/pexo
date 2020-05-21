@@ -36,7 +36,7 @@ module.exports = function (api, options) {
             importPath.value
           );
           const idAttr = t.jsxAttribute(
-            t.jsxIdentifier("name"),
+            t.jsxIdentifier("$$name"),
             t.stringLiteral(chunkName)
           );
           element.attributes.push(idAttr);

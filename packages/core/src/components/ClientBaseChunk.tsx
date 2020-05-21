@@ -14,17 +14,17 @@ import { ensureAsync } from "../utils/ensureAsync";
 import { useRequest } from "../context/ClientRequestContext";
 
 const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
-  name,
+  $$name,
   loader,
   redirect,
   head,
   actions,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
-  const chunkModule = useChunkModule({ name, loader });
+  const chunkModule = useChunkModule({ name: $$name, loader });
   const isVirtualEnvironment = useIsVirtualEnvironment();
   const { status, data } = useViewState({
-    name,
+    name: $$name,
     delegateProps,
     generateViewState:
       typeof chunkModule !== "symbol"

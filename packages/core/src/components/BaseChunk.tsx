@@ -5,7 +5,7 @@ import ClientBaseChunk from "./ClientBaseChunk";
 import { BaseProps } from "./types";
 
 const BaseChunk = <InputProps extends {}, ViewState extends {}>({
-  name = throwNameNotDefined(),
+  $$name = throwNameNotDefined(),
   loader,
   redirect,
   head,
@@ -15,7 +15,7 @@ const BaseChunk = <InputProps extends {}, ViewState extends {}>({
   if (!process.browser) {
     return (
       <ServerBaseChunk
-        name={name}
+        $$name={$$name}
         loader={loader}
         redirect={redirect}
         head={head}
@@ -26,7 +26,7 @@ const BaseChunk = <InputProps extends {}, ViewState extends {}>({
   }
   return (
     <ClientBaseChunk
-      name={name}
+      $$name={$$name}
       loader={loader}
       redirect={redirect}
       head={head}
@@ -38,7 +38,7 @@ const BaseChunk = <InputProps extends {}, ViewState extends {}>({
 
 const throwNameNotDefined = () => {
   throw new Error(
-    "Name property is missing on a chunk. This is a required property which should be injected by babel plugin poxy-babel. Most probably it is not present in the babel config."
+    "$$name property is missing on a chunk. This is a required property which should be injected by babel plugin poxy-babel. Most probably it is not present in the babel config."
   );
 };
 

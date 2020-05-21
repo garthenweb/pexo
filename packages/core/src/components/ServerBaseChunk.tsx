@@ -5,14 +5,14 @@ import { ServerChunkRegisterContext } from "../context/ServerChunkRegisterContex
 import { BaseProps } from "./types";
 
 const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
-  name,
+  $$name,
   loader,
   redirect,
   head,
   actions,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
-  const chunkCacheKey = generateChunkCacheKey(name, delegateProps);
+  const chunkCacheKey = generateChunkCacheKey($$name, delegateProps);
   const chunkModule = loader();
   if (!isSyncValue(chunkModule)) {
     throw new Error(
@@ -23,7 +23,7 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   registry.set(chunkCacheKey, {
     ...chunkModule,
     chunkCacheKey,
-    chunkName: name,
+    chunkName: $$name,
     isRedirect: Boolean(redirect),
     isHead: Boolean(head),
     actionKeys: actions ? Object.keys(actions) : [],

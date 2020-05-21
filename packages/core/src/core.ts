@@ -9,3 +9,4 @@ export {
   createPluginServiceWorker,
 } from "./plugins";
 export { useRequest } from "./context/ClientRequestContext";
+export { GenerateViewStateUtils } from "./types/GenerateViewStateUtils";
