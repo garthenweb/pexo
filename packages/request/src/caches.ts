@@ -1,4 +1,4 @@
-interface CacheItem<T> {
+export interface CacheItem<T> {
   createdAt: number;
   value: T;
 }

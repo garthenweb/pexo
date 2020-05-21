@@ -6,7 +6,7 @@ export type ResourceId = string;
 
 type ResourceSimpleTask<T> = (...args: any[]) => Promise<T>;
 
-type ResourceEnhancedTask<T, R extends ResourceTask> = (
+type ResourceEnhancedTask<T, R extends ResourceTask > = (
   ...args: any[]
 ) => (ctx: EnhancerObject<R>) => Promise<T>;
 
@@ -63,7 +63,7 @@ type ResourceEnhancedGeneratorTask<T> = (
   ...args: any[]
 ) => AsyncGenerator<unknown, T, unknown>;
 
-export type ResourceTask<T = any, R = any> =
+export type ResourceTask<T = any, R = ResourceTask<any, any>> =
   | ResourceSimpleTask<T>
   | ResourceEnhancedTask<T, R>
   | ResourceEnhancedGeneratorTask<T>;

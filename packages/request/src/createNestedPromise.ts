@@ -7,8 +7,8 @@ const nestedPromiseHandler = {
   },
 };
 
-export const createNestedPromise = <T>(p: Promise<T>): any => {
-  return new Proxy(p, nestedPromiseHandler);
+export const createNestedPromise = <T>(p: Promise<T>): DeepPromiseProps<T> => {
+  return new Proxy(p, nestedPromiseHandler) as DeepPromiseProps<T>;
 };
 
 export type DeepPromiseProps<T> = Promise<T> &

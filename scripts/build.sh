@@ -16,7 +16,7 @@ echo
 echo "Generating remaining types..."
 echo
 
-npx tsc --declaration --emitDeclarationOnly --declarationDir packages/core/lib --jsx preserve --esModuleInterop packages/core/src/core.ts
+npx tsc --declaration --downlevelIteration --target esnext --lib esnext,DOM,DOM.Iterable --emitDeclarationOnly --declarationDir packages/core/lib --jsx preserve --esModuleInterop --strict --suppressImplicitAnyIndexErrors --downlevelIteration --types node packages/core/src/core.ts
 
 echo
 echo "Done!"

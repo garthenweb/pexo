@@ -8,9 +8,11 @@ import {
   EnhancerRetrieve,
   EnhancerRequest,
   EnhancerApply,
+  ResourceTaskReturnType,
+  PromiseValue,
 } from "./resource.types";
 import { isRequestResource } from "./isRequestResource";
-import { createNestedPromise } from "./createNestedPromise";
+import { createNestedPromise, DeepPromiseProps } from "./createNestedPromise";
 
 export enum CacheStrategies {
   CacheFirst,
@@ -23,7 +25,10 @@ export enum CacheStrategies {
 export const executeResource = async <U extends ResourceTask>(
   asyncResource: Promise<ResourceMethodConfig<U>> | ResourceMethodConfig<U>,
   config: ResourceExecuteConfig
-) => {
+): Promise<{
+  cacheKey: string;
+  result: PromiseValue<ResourceTaskReturnType<U>>;
+}> => {
   const resource = await asyncResource;
   const cacheKey = resource.generateCacheKey(
     resource.resourceId,
@@ -32,10 +37,10 @@ export const executeResource = async <U extends ResourceTask>(
 
   config.registerResourceUsage(resource.resourceId);
 
-  let result: unknown;
+  let result: PromiseValue<ResourceTaskReturnType<U>>;
   switch (resource.strategy) {
     case CacheStrategies.NetworkOnly: {
-      result = executeAndStoreInCache(resource, cacheKey, config);
+      result = await executeAndStoreInCache(resource, cacheKey, config);
       break;
     }
     case CacheStrategies.NetworkFirst: {
@@ -75,7 +80,7 @@ export const executeResource = async <U extends ResourceTask>(
           console.warn("Request for revalidation failed in background")
         );
       } else {
-        result = req;
+        result = await req;
       }
       break;
     }
@@ -85,7 +90,7 @@ export const executeResource = async <U extends ResourceTask>(
       );
     }
   }
-  return { cacheKey, result: await result };
+  return { cacheKey, result };
 };
 
 const retrieveFromCache = async <U extends ResourceTask>(
@@ -176,7 +181,7 @@ const updateCache = async <U extends ResourceTask>(
 const taskRunner = async <U extends ResourceTask>(
   resource: ResourceMethodConfig<U>,
   config: ResourceExecuteConfig
-) => {
+): Promise<{ result: ResourceTaskReturnType<U>; updatesApplied: boolean }> => {
   let req = resource.runTask(...resource.args);
   if (isGeneratorValue(req)) {
     return executeGeneratorEnhancer(req, resource, config);
@@ -185,7 +190,8 @@ const taskRunner = async <U extends ResourceTask>(
   if (isSyncValue(req) && typeof req === "function") {
     req = req(createEnhancer(resource, config, mutableOptions));
   }
-  return req.then((result) => ({ result, ...mutableOptions }));
+  const result = await req;
+  return { result, ...mutableOptions };
 };
 
 const createEnhancer = <U extends ResourceTask>(
@@ -194,17 +200,17 @@ const createEnhancer = <U extends ResourceTask>(
   options: { updatesApplied: boolean }
 ) => {
   const retrieve: EnhancerRetrieve<U> = (maybeResource?: any) =>
-    createNestedPromise(
-      executeRetrieveEnhancer(maybeResource, parentResource, config)
+    createNestedPromise<ResourceTaskReturnType<U>>(
+      executeRetrieveEnhancer(maybeResource, parentResource, config) as any
     );
   const request: EnhancerRequest<U> = (maybeResource?: any) =>
-    createNestedPromise(
-      executeRequestEnhancer(maybeResource, parentResource, config)
+    createNestedPromise<ResourceTaskReturnType<U>>(
+      executeRequestEnhancer(maybeResource, parentResource, config) as any
     );
-  const apply: EnhancerApply<U> = async (
+  const apply: EnhancerApply<U> = (
     maybeResource: any,
     transformer?: any
-  ) => {
+  ): DeepPromiseProps<any> => {
     return createNestedPromise(
       executeApplyEnhancer(
         transformer ? maybeResource : undefined,
@@ -219,6 +225,7 @@ const createEnhancer = <U extends ResourceTask>(
       })
     );
   };
+
   return { request, retrieve, apply };
 };
 
@@ -230,9 +237,6 @@ const executeGeneratorEnhancer = async <U extends ResourceTask, T = unknown>(
   let updatesApplied = false;
   let { value, done } = await req.next();
   while (!done) {
-    if (done) {
-      return value;
-    }
     if (Array.isArray(value)) {
       let result;
       switch (value[0]) {
@@ -271,7 +275,7 @@ const executeGeneratorEnhancer = async <U extends ResourceTask, T = unknown>(
     }
   }
 
-  return { result: value, updatesApplied };
+  return { result: value as ResourceTaskReturnType<U>, updatesApplied };
 };
 
 const executeRetrieveEnhancer = async <
@@ -330,7 +334,7 @@ const executeApplyEnhancer = async <
   );
 
   if (enhancedResource && cacheResult !== undefined && cacheKey) {
-    const nextResult = transform(cacheResult);
+    const nextResult = transform(cacheResult as any);
     updateCache(nextResult, enhancedResource, cacheKey, config);
     return nextResult;
   }
