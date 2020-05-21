@@ -5,7 +5,6 @@ import {
   ResourceTask,
   ResourceExecuteConfig,
   MaybeEnhancerResource,
-  EnhancerObject,
   EnhancerRetrieve,
   EnhancerRequest,
   EnhancerApply,
@@ -213,7 +212,9 @@ const createEnhancer = <U extends ResourceTask>(
         config,
         transformer ?? maybeResource
       ).then((res) => {
-        options.updatesApplied = true;
+        if (res) {
+          options.updatesApplied = true;
+        }
         return res;
       })
     );

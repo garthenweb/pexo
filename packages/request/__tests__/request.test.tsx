@@ -503,6 +503,7 @@ describe("request", () => {
         expect(createOne).toHaveBeenCalledTimes(1);
         expect(resolveList).toHaveBeenCalledTimes(1);
       });
+
       it("should use the same resource by default", async () => {
         const productList = [
           { id: 1, name: "product1" },
@@ -570,6 +571,23 @@ describe("request", () => {
         expect(await request(get())).toBe(2);
         await request(getWrap2.update());
         expect(await request(get())).toBe(3);
+      });
+
+      it("should invalidate if apply is used within a mutation but no cache key was found", async () => {
+        const resource = createRequestResource("test_resource_name_1", {
+          read: () => Promise.resolve(1),
+          update: () => async ({ apply }) => {
+            await apply((prev) => prev + 1);
+            return;
+          },
+        });
+        const prevUpdatedAt = request.getUpdateAtForResourceIds([
+          "test_resource_name_1",
+        ]);
+        await request(resource.update());
+        expect(prevUpdatedAt).not.toEqual(
+          request.getUpdateAtForResourceIds(["test_resource_name_1"])
+        );
       });
     });
     describe("with request", () => {
