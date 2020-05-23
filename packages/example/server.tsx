@@ -27,7 +27,7 @@ expressApp.use(
 if (process.env.NODE_ENV !== "production") {
   expressApp.use(
     "/__parcel_source_root",
-    express.static(path.join(process.cwd()), {
+    express.static(path.join(process.cwd(), '../..'), {
       maxAge: 2500,
     })
   );

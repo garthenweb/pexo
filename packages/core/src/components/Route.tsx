@@ -1,5 +1,5 @@
 import React, { FC, useCallback, useRef } from "react";
-import ReactDOM from "react-dom";
+import { render, unmountComponentAtNode } from "react-dom";
 import { Route as ReactRouterRoute, useLocation } from "react-router-dom";
 import { createLocation } from "history";
 import { useClientRouterContext } from "../context/ClientRouterContext";
@@ -33,7 +33,7 @@ const usePreFetch = (
       }
       let fragment = document.createDocumentFragment();
       const nextLocation = createLocation(path);
-      ReactDOM.render(
+      render(
         <VirtualEnvironmentProvider>
           <SharedGlobalClientProvider>
             <Component location={nextLocation} />
@@ -43,7 +43,7 @@ const usePreFetch = (
       );
       didPreFetch.current = true;
       return () => {
-        ReactDOM.unmountComponentAtNode(fragment);
+        unmountComponentAtNode(fragment);
         (fragment as any) = null;
       };
     }, [shouldPreFetch, path, Component, didPreFetch]),

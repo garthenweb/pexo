@@ -1,4 +1,4 @@
-import { RedirectChunkViewProps } from "../../packages/core/src/components";
+import { RedirectChunkViewProps } from "@pexo/core";
 
 interface InputProps {
   pathname: string;

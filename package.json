@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "test": "jest",
+    "test:experimental": "PEXO_EXPERIMENTAL=true jest",
     "build": "./scripts/build.sh"
   },
   "author": "Jannick Garthen <jannick.garthen@gmail.com>",
@@ -38,8 +39,6 @@
     "@types/supertest": "^2.0.9",
     "express": "4.17.1",
     "jest": "^26.0.1",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
     "supertest": "^4.0.2"
   },
   "dependencies": {

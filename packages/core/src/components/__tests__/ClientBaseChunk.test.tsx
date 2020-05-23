@@ -1,18 +1,22 @@
 import React from "react";
 import { render, cleanup, act, fireEvent } from "@testing-library/react";
 import { createRequestResource, apply } from "@pexo/request";
-import ClientBaseChunk from "../ClientBaseChunk";
+import BaseChunk from "../BaseChunk";
 import { awaiter } from "../../../__tests__/utils";
 import { useRequest } from "../../context/ClientRequestContext";
 
 describe("ClientBaseChunk", () => {
+  beforeEach(() => {
+    process.browser = true;
+  });
   afterEach(() => {
     cleanup();
+    delete process.browser;
   });
 
-  it("should render a view", () => {
-    const { getByText } = render(
-      <ClientBaseChunk
+  it("should render a view", async () => {
+    const { findByText } = render(
+      <BaseChunk
         $$name={String(performance.now())}
         loader={() => ({
           View: () => <div>Test</div>,
@@ -20,12 +24,12 @@ describe("ClientBaseChunk", () => {
       />
     );
 
-    expect(getByText("Test")).not.toBeNull();
+    expect(await findByText("Test")).not.toBeNull();
   });
 
   it("should render async module view", async () => {
     const { findByText } = render(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={String(performance.now())}
         loader={() =>
           Promise.resolve({
@@ -41,7 +45,7 @@ describe("ClientBaseChunk", () => {
   it("should render loader for async generate view state", async () => {
     const { resolve, promise } = awaiter();
     const { findByText, queryByText } = render(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={String(performance.now())}
         loader={() =>
           Promise.resolve({
@@ -50,7 +54,7 @@ describe("ClientBaseChunk", () => {
               return {};
             },
             View: () => <div>Test</div>,
-            Loading: () => <div>Loading</div>,
+            LoadingView: () => <div>Loading</div>,
           })
         }
       />
@@ -66,7 +70,7 @@ describe("ClientBaseChunk", () => {
   it("should render error for async generate view state that fails", async () => {
     const { reject, promise } = awaiter();
     const { findByText, queryByText } = render(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={String(performance.now())}
         loader={() =>
           Promise.resolve({
@@ -75,15 +79,15 @@ describe("ClientBaseChunk", () => {
               return {};
             },
             View: () => <div>Test</div>,
-            Loading: () => <div>Loading</div>,
-            Error: () => <div>Error</div>,
+            LoadingView: () => <div>Loading</div>,
+            ErrorView: () => <div>Error</div>,
           })
         }
       />
     );
 
-    expect(queryByText("Test")).toBeNull();
     expect(await findByText("Loading")).not.toBeNull();
+    expect(queryByText("Test")).toBeNull();
     act(() => reject());
     expect(await findByText("Error")).not.toBeNull();
     expect(queryByText("Loading")).toBeNull();
@@ -92,7 +96,7 @@ describe("ClientBaseChunk", () => {
   it("should pass the reason for an error to the error component", async () => {
     const { reject, promise } = awaiter();
     const { findByText, queryByText } = render(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={String(performance.now())}
         loader={() =>
           Promise.resolve({
@@ -101,8 +105,8 @@ describe("ClientBaseChunk", () => {
               return {};
             },
             View: () => <div>Test</div>,
-            Loading: () => <div>Loading</div>,
-            Error: ({ error }: { error: string }) => <div>{error}</div>,
+            LoadingView: () => <div>Loading</div>,
+            ErrorView: ({ error }: { error: string }) => <div>{error}</div>,
           })
         }
       />
@@ -118,8 +122,8 @@ describe("ClientBaseChunk", () => {
 
   it("should allow to pass actions into the view", async () => {
     const fire = jest.fn();
-    const { getByText } = render(
-      <ClientBaseChunk
+    const { findByText } = render(
+      <BaseChunk
         $$name={String(performance.now())}
         actions={{ fire }}
         loader={() => ({
@@ -130,14 +134,14 @@ describe("ClientBaseChunk", () => {
       />
     );
 
-    fireEvent.click(getByText("Test"));
+    fireEvent.click(await findByText("Test"));
     expect(fire).toHaveBeenCalledTimes(1);
   });
 
   it("should update view as soon as input props change", async () => {
     const name = String(performance.now());
     const { queryByText, findByText, rerender } = render(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={name}
         value={1}
         loader={() => ({
@@ -149,7 +153,7 @@ describe("ClientBaseChunk", () => {
 
     expect(await findByText("1")).not.toBeNull();
     rerender(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={name}
         value={2}
         loader={() => ({
@@ -166,7 +170,7 @@ describe("ClientBaseChunk", () => {
     const name = String(performance.now());
     const generateViewState = jest.fn(() => ({ value: "Chunk" }));
     const { findByText, rerender } = render(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={name}
         loader={() => ({
           View: ({ value }: { value: string }) => <div>{value}</div>,
@@ -180,7 +184,7 @@ describe("ClientBaseChunk", () => {
     expect(await findByText("reset")).not.toBeNull();
 
     rerender(
-      <ClientBaseChunk
+      <BaseChunk
         $$name={name}
         loader={() => ({
           View: ({ value }: { value: string }) => <div>{value}</div>,
@@ -201,7 +205,7 @@ describe("ClientBaseChunk", () => {
         update: () => Promise.resolve(),
       });
       const { findByText, getByText } = render(
-        <ClientBaseChunk
+        <BaseChunk
           $$name={name}
           loader={() => ({
             View: ({ state }: { state: number }) => {
@@ -242,7 +246,7 @@ describe("ClientBaseChunk", () => {
         }
       );
       const { findByText, getByText } = render(
-        <ClientBaseChunk
+        <BaseChunk
           $$name={name}
           loader={() => ({
             View: ({ state }: { state: number }) => {

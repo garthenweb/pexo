@@ -1,5 +1,5 @@
 import React, { FC, useContext } from "react";
-import { ChunkModule } from "../../packages/core/src/components/types";
+import { ChunkModule } from "../components/types";
 
 export type StaticChunkModuleCache = Map<string, ChunkModule<any, any>>;
 

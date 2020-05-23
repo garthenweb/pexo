@@ -1,5 +1,10 @@
 import React from "react";
-import ReactDOM from "react-dom";
+import {
+  render,
+  hydrate,
+  unmountComponentAtNode,
+  unstable_createRoot as createRoot,
+} from "react-dom";
 
 import { PxGlobalClientProvider } from "./context/GlobalContext";
 import { ViewStateCache } from "./types/ViewStateCache";
@@ -35,7 +40,9 @@ export const mount = async (config: MountConfig) => {
     registerServiceWorker();
   }
   const [, node, appStatus] = await Promise.all([
-    hydrateRequiredChunks(),
+    process.env.PEXO_EXPERIMENTAL !== "true"
+      ? hydrateRequiredChunks()
+      : Promise.resolve({}),
     createApp(),
     injectGlobalRuntime().ready,
   ]);
@@ -61,33 +68,42 @@ export const mount = async (config: MountConfig) => {
     });
   }
 
-  const renderMethod =
-    !appStatus.isOutdated && viewStateCache.size ? "hydrate" : "render";
-  ReactDOM[renderMethod](
+  const app = (
     <PxGlobalClientProvider
       viewStateCache={viewStateCache}
       staticChunkModuleCache={staticChunkModuleCache}
       reloadOnNavigation={appStatus.isOutdated}
     >
       {node}
-    </PxGlobalClientProvider>,
-    container
+    </PxGlobalClientProvider>
   );
-  if (renderMethod === "render" && !viewStateCache.size) {
-    logger.warn(
-      "Falling back to ReactDom.render instead of ReactDom.hydrate because there is a mismatch between the view store cache and the rendered chunks"
-    );
+
+  if (!appStatus.isOutdated && viewStateCache.size) {
+    if (process.env.PEXO_EXPERIMENTAL === "true") {
+      logger.info("Running in experimental mode");
+      createRoot(container).render(app);
+    } else {
+      hydrate(app, container);
+    }
+  } else {
+    render(app, container);
+    if (appStatus.isOutdated) {
+      logger.warn(
+        "Falling back to ReactDom.render instead of ReactDom.hydrate because the server has another version than the client and cannot send a valid application state"
+      );
+    }
+    if (!viewStateCache.size) {
+      logger.warn(
+        "Falling back to ReactDom.render instead of ReactDom.hydrate because there is a mismatch between the view store cache and the rendered chunks"
+      );
+    }
   }
-  if (renderMethod === "render" && appStatus.isOutdated) {
-    logger.warn(
-      "Falling back to ReactDom.render instead of ReactDom.hydrate because the server has another version than the client and cannot send a valid application state"
-    );
-  }
+
   return container;
 };
 
 export const unmount = (container: Element) => {
-  ReactDOM.unmountComponentAtNode(container);
+  unmountComponentAtNode(container);
   clearGlobalRuntime();
 };
 

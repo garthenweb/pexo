@@ -5,18 +5,23 @@ import { createHybridWithComponent } from "./utils";
 import BaseChunk from "../src/components/BaseChunk";
 import { useRequest } from "../src/core";
 
+jest.mock("scheduler", () => require("scheduler/unstable_mock"));
+
 describe("A hybrid app", () => {
   let consoleErrorSpy: jest.SpyInstance<any, any>;
   let reactHydrateSpy: jest.SpyInstance<any, any>;
+  let reactCreateRootSpy: jest.SpyInstance<any, any>;
   let reactRenderSpy: jest.SpyInstance<any, any>;
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
     reactHydrateSpy = jest.spyOn(ReactDOM, "hydrate");
+    reactCreateRootSpy = jest.spyOn(ReactDOM, "unstable_createRoot");
     reactRenderSpy = jest.spyOn(ReactDOM, "render");
   });
   afterEach(() => {
     consoleErrorSpy.mockRestore();
     reactHydrateSpy.mockRestore();
+    reactCreateRootSpy.mockRestore();
     reactRenderSpy.mockRestore();
   });
 
@@ -45,13 +50,20 @@ describe("A hybrid app", () => {
       {
         testClient: (container: Element) => {
           expect(container.querySelector("script")).toBeNull();
-          expect(reactHydrateSpy).toHaveBeenCalledTimes(1);
+          if (process.env.PEXO_EXPERIMENTAL === "true") {
+            expect(reactCreateRootSpy).toHaveBeenCalledTimes(1);
+            expect(reactHydrateSpy).not.toHaveBeenCalled();
+          } else {
+            expect(reactHydrateSpy).toHaveBeenCalledTimes(1);
+            expect(reactCreateRootSpy).not.toHaveBeenCalled();
+          }
           expect(reactRenderSpy).not.toHaveBeenCalled();
           expect(console.error).not.toHaveBeenCalledWith(
-            'Warning: Did not expect server HTML to contain the text node "%s" in <%s>.',
+            "Warning: Did not expect server HTML to contain a <%s> in <%s>.",
             expect.anything(),
             expect.anything()
           );
+          expect(console.error).not.toHaveBeenCalled();
         },
       }
     );
@@ -98,7 +110,13 @@ describe("A hybrid app", () => {
         },
         testClient: async (container: Element) => {
           expect(read).toHaveBeenCalledTimes(1);
-          expect(reactHydrateSpy).toHaveBeenCalledTimes(1);
+          if (process.env.PEXO_EXPERIMENTAL === "true") {
+            expect(reactCreateRootSpy).toHaveBeenCalledTimes(1);
+            expect(reactHydrateSpy).not.toHaveBeenCalled();
+          } else {
+            expect(reactHydrateSpy).toHaveBeenCalledTimes(1);
+            expect(reactCreateRootSpy).not.toHaveBeenCalled();
+          }
           expect(read).toHaveBeenCalledTimes(1);
           expect(
             container.querySelector('[data-testid="value"]')!.innerHTML
