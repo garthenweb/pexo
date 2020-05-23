@@ -10,3 +10,4 @@ export {
 } from "./plugins";
 export { useRequest } from "./context/ClientRequestContext";
 export { GenerateViewStateUtils } from "./types/GenerateViewStateUtils";
+export { RedirectChunkViewProps } from "./components/Redirect";

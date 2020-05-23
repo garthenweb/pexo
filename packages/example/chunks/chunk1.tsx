@@ -23,6 +23,10 @@ export const View: FC<Props> = ({ title, subTitle }) => (
   </Wrapper>
 );
 
+export const ErrorView = () => {
+  return <div>:(</div>;
+};
+
 interface InputProps {
   page?: string;
 }

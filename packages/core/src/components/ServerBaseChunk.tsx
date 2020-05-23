@@ -1,8 +1,8 @@
 import React, { useContext } from "react";
 import { isSyncValue } from "@pexo/utils";
-import { generateChunkCacheKey } from "../utils/cacheKey";
 import { ServerChunkRegisterContext } from "../context/ServerChunkRegisterContext";
 import { BaseProps } from "./types";
+import { useChunkContext } from "./BaseChunk";
 
 const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   $$name,
@@ -12,7 +12,7 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   actions,
   ...delegateProps
 }: InputProps & BaseProps<InputProps, ViewState>) => {
-  const chunkCacheKey = generateChunkCacheKey($$name, delegateProps);
+  const { cacheKey } = useChunkContext();
   const chunkModule = loader();
   if (!isSyncValue(chunkModule)) {
     throw new Error(
@@ -20,9 +20,9 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
     );
   }
   const { registry } = useContext(ServerChunkRegisterContext);
-  registry.set(chunkCacheKey, {
+  registry.set(cacheKey, {
     ...chunkModule,
-    chunkCacheKey,
+    chunkCacheKey: cacheKey,
     chunkName: $$name,
     isRedirect: Boolean(redirect),
     isHead: Boolean(head),
@@ -31,7 +31,7 @@ const ServerBaseChunk = <InputProps extends {}, ViewState extends {}>({
   });
   return (
     <div
-      data-px-server-template-chunk-cache-key={chunkCacheKey}
+      data-px-server-template-chunk-cache-key={cacheKey}
       children="__PX_CHUNK/End__"
     />
   );

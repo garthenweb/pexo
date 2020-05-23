@@ -39,3 +39,7 @@ export const generateViewState = async function* (inputProps: InputProps) {
     even: inputProps.value % 2 === 0,
   };
 };
+
+export const ErrorView = () => {
+  return <div>:(</div>;
+};

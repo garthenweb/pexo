@@ -7,8 +7,8 @@ interface ViewActions {
 
 export interface ChunkModule<InputProps, ViewState> {
   View: ComponentType<ViewState & { actions?: ViewActions }>;
-  Loading?: ComponentType<{ actions?: ViewActions }>;
-  Error?: ComponentType<{ error: unknown; actions?: ViewActions }>;
+  LoadingView?: ComponentType<{ actions?: ViewActions }>;
+  ErrorView?: ComponentType<{ error: unknown; actions?: ViewActions }>;
   generateViewState?: (
     props: InputProps,
     utils: GenerateViewStateUtils

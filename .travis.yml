@@ -4,5 +4,7 @@ matrix:
     - node_js: "14"
     - node_js: "12"
 
-script: "npm test -- --coverage"
+script:
+  - "npm test -- --coverage"
+  - "npm run test:experimental"
 after_success: cat ./coverage/lcov.info | npx coveralls

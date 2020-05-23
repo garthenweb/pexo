@@ -40,6 +40,7 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   if (typeof chunkModule === "symbol") {
     return null;
   }
+
   if (redirect) {
     if (status === useViewState.LOADING) {
       return null;
@@ -55,15 +56,15 @@ const ClientBaseChunk = <InputProps extends {}, ViewState extends {}>({
   }
 
   if (status === useViewState.LOADING) {
-    if (chunkModule.Loading) {
-      return <chunkModule.Loading actions={actions} />;
+    if (chunkModule.LoadingView) {
+      return <chunkModule.LoadingView actions={actions} />;
     }
     return null;
   }
 
   if (status === useViewState.ERROR) {
-    if (chunkModule.Error) {
-      return <chunkModule.Error error={data} actions={actions} />;
+    if (chunkModule.ErrorView) {
+      return <chunkModule.ErrorView error={data} actions={actions} />;
     }
     return null;
   }

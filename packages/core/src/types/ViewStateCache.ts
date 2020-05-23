@@ -6,3 +6,13 @@ export type ViewStateCache = Map<
     updatedAt: number;
   }
 >;
+
+export type ClientViewStateCacheItem = {
+  viewState: {};
+  resourceIds: string[];
+  updatedAt: number;
+  generator?: AsyncGenerator;
+  error?: unknown;
+};
+
+export type ClientViewStateCache = Map<string, ClientViewStateCacheItem>;

@@ -76,14 +76,16 @@ export const createStreamMiddleware = (config: MiddlewareConfig) => {
           <PxGlobalServerProvider>{chunkNode}</PxGlobalServerProvider>
         </StaticRouter>
       );
-      const orderedChunks = renderStaticChunkTemplate({
-        createApp,
-        createAppContext,
-        shouldRenderRoutesOnly: shouldRenderRoutesOnly
-          ? "routes"
-          : renderTemplate,
-        plugins,
-      });
+      const orderedChunks = disableServerSideRendering
+        ? []
+        : renderStaticChunkTemplate({
+            createApp,
+            createAppContext,
+            shouldRenderRoutesOnly: shouldRenderRoutesOnly
+              ? "routes"
+              : renderTemplate,
+            plugins,
+          });
 
       let headConfig = {};
       if (!disableServerSideRendering && !shouldRenderRoutesOnly) {

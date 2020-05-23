@@ -8,9 +8,9 @@ module.exports = {
     "node_modules",
     "scripts",
   ],
-  "moduleNameMapper": {
+  moduleNameMapper: {
     "^@pexo/utils$": "<rootDir>/packages/utils/src/utils.ts",
     "^@pexo/request$": "<rootDir>/packages/request/src/request.ts",
     "^@pexo/core$": "<rootDir>/packages/core/src/core.ts",
-  }
+  },
 };
