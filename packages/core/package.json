@@ -1,6 +1,6 @@
 {
   "name": "@pexo/core",
-  "version": "0.0.0-alpha.5.3",
+  "version": "0.0.0-alpha.6",
   "description": "Command line interface to start a Pexo application",
   "author": "Jannick Garthen <jannick.garthen@gmail.com>",
   "license": "MIT",
@@ -22,8 +22,8 @@
     "node": ">=12.x"
   },
   "dependencies": {
-    "@pexo/utils": "^0.0.0-alpha.3.1",
-    "@pexo/request": "^0.0.0-alpha.3.3",
+    "@pexo/utils": "^0.0.0-alpha.3.2",
+    "@pexo/request": "^0.0.0-alpha.4",
     "history": "4.10.1",
     "object-hash": "^2.0.3",
     "react-router": "^5.1.2",

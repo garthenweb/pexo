@@ -1,6 +1,6 @@
 {
   "name": "@pexo/babel-transform",
-  "version": "0.0.0-alpha.1",
+  "version": "0.0.0-alpha.2",
   "description": "Babel transform to enhance chunks with additional data",
   "author": "Jannick Garthen <jannick.garthen@gmail.com>",
   "license": "MIT",
@@ -10,7 +10,6 @@
     "node": ">=12.x"
   },
   "dependencies": {
-    "@parcel/plugin": "^2.0.0-nightly.208",
     "object-hash": "^2.0.3"
   }
 }

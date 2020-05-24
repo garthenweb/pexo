@@ -1,6 +1,6 @@
 {
   "name": "@pexo/request",
-  "version": "0.0.0-alpha.3.3",
+  "version": "0.0.0-alpha.4",
   "description": "Pexo request module",
   "author": "Jannick Garthen <jannick.garthen@gmail.com>",
   "license": "MIT",
@@ -22,7 +22,7 @@
     "node": ">=12.x"
   },
   "dependencies": {
-    "@pexo/utils": "^0.0.0-alpha.3.1",
+    "@pexo/utils": "^0.0.0-alpha.3.2",
     "object-hash": "^2.0.3"
   },
   "devDependencies": {

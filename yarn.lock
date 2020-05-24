@@ -1485,7 +1485,7 @@
   dependencies:
     "@parcel/plugin" "2.0.0-nightly.275+b275d096"
 
-"@parcel/plugin@2.0.0-nightly.275", "@parcel/plugin@2.0.0-nightly.275+b275d096", "@parcel/plugin@^2.0.0-nightly.208":
+"@parcel/plugin@2.0.0-nightly.275", "@parcel/plugin@2.0.0-nightly.275+b275d096":
   version "2.0.0-nightly.275"
   resolved "https://registry.yarnpkg.com/@parcel/plugin/-/plugin-2.0.0-nightly.275.tgz#c6edbf287f2698c0d8c89a9a8750a086c2b0893a"
   integrity sha512-fCsGpqaJmxvnfdOvq4qldueLhooMSUPpMXYv0PlPKMEozWjOb26kPqa60xPC2O/n44NusqIjuCUU/FzdjTLyug==
