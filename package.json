@@ -38,6 +38,8 @@
     "@types/jest": "^25.2.3",
     "@types/supertest": "^2.0.9",
     "express": "4.17.1",
+    "istanbul-api": "^3.0.0",
+    "istanbul-lib-coverage": "^3.0.0",
     "jest": "^26.0.1",
     "supertest": "^4.0.2"
   },
