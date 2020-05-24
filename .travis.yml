@@ -5,6 +5,7 @@ matrix:
     - node_js: "12"
 
 script:
-  - "npm test -- --coverage"
-  - "npm run test:experimental"
+  - npm test -- --coverage && mv ./coverage/coverage-final.json ./coverage/coverage-final-legacy.json
+  - npm run test:experimental -- --coverage && mv ./coverage/coverage-final.json ./coverage/coverage-final-experimental.json
+  - node ./scripts/mergeCoverage.js
 after_success: cat ./coverage/lcov.info | npx coveralls
