@@ -11,10 +11,12 @@
   "sideEffects": false,
   "targets": {
     "main": {
-      "isLibrary": true
+      "isLibrary": true,
+      "context": "node"
     },
     "module": {
-      "isLibrary": true
+      "isLibrary": true,
+      "context": "node"
     }
   },
   "engines": {
