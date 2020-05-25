@@ -35,7 +35,7 @@ export const bookmarkResource = createRequestResource<Bookmark[]>(
       return request;
     },
   },
-  { cacheable: true, ttl: 10000 }
+  { cacheable: true, ttl: 10000, pushable: true }
 );
 
 const createListCreateMutation = (nextItem: Bookmark) => (

@@ -13,6 +13,7 @@ export const getHydrationResourceScript = (
   resources: [string, CacheItem<any>][]
 ) => {
   return resources
+    .filter(([, resource]) => resource.pushable)
     .map(([key, resource]) => {
       return `<script type="application/json" data-px-runtime data-px-hydration-resource-key="${key}">${JSON.stringify(
         resource

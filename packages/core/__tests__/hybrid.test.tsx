@@ -69,36 +69,51 @@ describe("A hybrid app", () => {
     );
   });
 
-  it("should hydrate resources", async () => {
+  it("should hydrate pushable resources", async () => {
     const read = jest.fn(() => Promise.resolve(1));
-    const resource = createRequestResource(
-      "test_resource",
+    const resource1 = createRequestResource(
+      "test_resource1",
       {
         read,
-        update: () => async ({ apply }) => {
-          return apply((prev) => prev + 1);
+        update: () => async ({ request }) => {
+          return (await request()) + 1;
         },
       },
       { cacheable: true, ttl: 1000 }
+    );
+    const resource2 = createRequestResource(
+      "test_resource2",
+      {
+        read,
+        update: () => async ({ request }) => {
+          return (await request()) + 1;
+        },
+      },
+      { cacheable: true, ttl: 1000, pushable: true }
     );
     await createHybridWithComponent(
       () => (
         <>
           <BaseChunk
-            multiplicate={3}
             $$name="test"
             loader={() => ({
               View: ({ value }: { value: number }) => {
                 const request = useRequest();
                 const [val, setVal] = React.useState(value);
                 useEffect(() => {
-                  request(resource.update()).then((val) => setVal(val));
+                  Promise.all([
+                    request(resource1.update()),
+                    request(resource2.update()),
+                  ]).then(([val1, val2]) => {
+                    setVal(val1 + val2);
+                  });
                 }, []);
                 return <div data-testid="value">{val}</div>;
               },
               generateViewState: async (_, { request }) =>
                 Promise.resolve({
-                  value: await request(resource()),
+                  value:
+                    (await request(resource1())) + (await request(resource2())),
                 }),
             })}
           />
@@ -109,7 +124,7 @@ describe("A hybrid app", () => {
           expect(res.text).toContain("data-px-hydration-resource-key");
         },
         testClient: async (container: Element) => {
-          expect(read).toHaveBeenCalledTimes(1);
+          expect(read).toHaveBeenCalledTimes(5);
           if (process.env.PEXO_EXPERIMENTAL === "true") {
             expect(reactCreateRootSpy).toHaveBeenCalledTimes(1);
             expect(reactHydrateSpy).not.toHaveBeenCalled();
@@ -117,10 +132,9 @@ describe("A hybrid app", () => {
             expect(reactHydrateSpy).toHaveBeenCalledTimes(1);
             expect(reactCreateRootSpy).not.toHaveBeenCalled();
           }
-          expect(read).toHaveBeenCalledTimes(1);
           expect(
             container.querySelector('[data-testid="value"]')!.innerHTML
-          ).toBe("2");
+          ).toBe("4");
         },
       }
     );

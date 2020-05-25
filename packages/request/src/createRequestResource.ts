@@ -21,6 +21,7 @@ export const createRequestResource: CreateRequestResource = (
     ttl,
     cacheable,
     bundleable,
+    pushable,
     strategy,
     generateCacheKey,
   } = Object.assign(
@@ -28,6 +29,7 @@ export const createRequestResource: CreateRequestResource = (
       ttl: 0,
       cacheable: false,
       bundleable: true,
+      pushable: false,
       strategy: CacheStrategies.CacheFirst,
     },
     config
@@ -40,6 +42,7 @@ export const createRequestResource: CreateRequestResource = (
     ttl: method === "read" ? ttl : 0,
     cacheable: method === "read" ? cacheable : false,
     bundleable: method === "read" ? bundleable : false,
+    pushable: method === "read" ? pushable : false,
     mutates: method !== "read",
     runTask: tasks[method],
     strategy: method === "read" ? strategy : CacheStrategies.NetworkOnly,

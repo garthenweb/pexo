@@ -80,6 +80,7 @@ export type ResourceMethodConfig<U extends ResourceTask> = {
   generateCacheKey: (resourceId: ResourceId, args: any[]) => string;
   cacheable?: boolean;
   bundleable?: boolean;
+  pushable?: boolean;
   mutates: boolean;
   ttl?: number;
 };
@@ -90,6 +91,7 @@ export type ResourceCreatorConfig = {
   cacheable?: boolean;
   bundleable?: boolean;
   mutates?: boolean;
+  pushable?: boolean;
   ttl?: number;
 };
 

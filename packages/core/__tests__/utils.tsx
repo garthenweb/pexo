@@ -113,10 +113,9 @@ export const createHybridWithComponent = (
         process.browser = true;
         let clean: () => void;
         try {
-          const mainStart = res.text.indexOf("<body");
-          const mainEnd = res.text.indexOf("</body>");
-          // const div = document.createElement("div");
-          document.body.innerHTML = res.text.slice(mainStart, mainEnd + 7);
+          const bodyStart = res.text.indexOf("<body>");
+          const bodyEnd = res.text.indexOf("</body>");
+          document.body.innerHTML = res.text.slice(bodyStart + 6, bodyEnd);
           const container = document.body.querySelector("main");
           ({ clean } = await createRendererWithComponent(
             Application,

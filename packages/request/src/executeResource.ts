@@ -130,7 +130,7 @@ const executeAndStoreInCache = async <U extends ResourceTask>(
   cacheKey: string,
   config: ResourceExecuteConfig
 ) => {
-  const { resourceId, bundleable, mutates } = resource;
+  const { resourceId, bundleable, mutates, pushable } = resource;
   const { pendingCache, resourceState } = config;
   if (bundleable && pendingCache.has(cacheKey)) {
     const { value } = pendingCache.get(cacheKey)!;
@@ -143,6 +143,7 @@ const executeAndStoreInCache = async <U extends ResourceTask>(
     pendingCache.set(cacheKey, {
       createdAt: Date.now(),
       value: request,
+      pushable: Boolean(pushable),
     });
   }
 
@@ -165,7 +166,7 @@ const executeAndStoreInCache = async <U extends ResourceTask>(
 
 const updateCache = async <U extends ResourceTask>(
   nextValue: unknown,
-  { cacheable, resourceId }: ResourceMethodConfig<U>,
+  { cacheable, pushable, resourceId }: ResourceMethodConfig<U>,
   cacheKey: string,
   { cache, resourceState }: ResourceExecuteConfig
 ) => {
@@ -173,6 +174,7 @@ const updateCache = async <U extends ResourceTask>(
     cache.set(cacheKey, {
       createdAt: Date.now(),
       value: nextValue,
+      pushable: Boolean(pushable),
     });
     resourceState.update(resourceId, { invalidate: false });
   }

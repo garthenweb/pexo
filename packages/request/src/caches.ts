@@ -1,5 +1,6 @@
 export interface CacheItem<T> {
   createdAt: number;
+  pushable: boolean;
   value: T;
 }
 
