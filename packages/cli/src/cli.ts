@@ -91,7 +91,6 @@ const spawnClientWatch = (entry: string, mode = "development") => {
       mode === "development" ? "--watch-for-stdin" : "",
       "--cache-dir",
       ".parcel-cache/client",
-      "--no-cache",
       entry,
     ],
     {
@@ -122,7 +121,6 @@ const spawnServerBuildDev = (entry: string, mode = "development") => {
       "--cache-dir",
       ".parcel-cache/server",
       mode === "development" ? "--no-minify" : "",
-      "--no-cache",
       entry,
     ],
     {
