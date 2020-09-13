@@ -4,8 +4,8 @@
   "description": "",
   "private": true,
   "scripts": {
-    "start": "pexo develop --server-entry ./server.tsx --client-entry ./client.tsx",
-    "build": "pexo build --server-entry ./server.tsx --client-entry ./client.tsx"
+    "start": "PEXO_EXPERIMENTAL=true pexo develop --server-entry ./server.tsx --client-entry ./client.tsx",
+    "build": "PEXO_EXPERIMENTAL=true pexo build --server-entry ./server.tsx --client-entry ./client.tsx"
   },
   "targets": {
     "server": {
