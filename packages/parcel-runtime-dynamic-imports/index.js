@@ -31,7 +31,7 @@ exports.default = new Runtime({
 
     const chunkMap = new Map();
     for (let dependency of asyncDependencies) {
-      let resolved = bundleGraph.resolveExternalDependency(dependency, bundle);
+      let resolved = bundleGraph.resolveAsyncDependency(dependency, bundle);
       if (!resolved) {
         continue;
       }
@@ -143,7 +143,9 @@ function getLoaderRuntimes({ bundle, bundleGroup, bundleGraph }) {
     }
 
     if (bundle.env.outputFormat === "global") {
-      loaders += `.then(() => parcelRequire('${bundleGroup.entryAssetId}')${
+      loaders += `.then(() => parcelRequire('${bundleGraph.getAssetPublicId(
+        bundleGraph.getAssetById(bundleGroup.entryAssetId)
+      )}')${
         // In global output with scope hoisting, functions return exports are
         // always returned. Otherwise, the exports are returned.
         bundle.env.scopeHoist ? "()" : ""
@@ -196,8 +198,8 @@ function getLoaders(ctx) {
 function getRelativePathExpr(from, to) {
   if (shouldUseRuntimeManifest(from)) {
     return `require('@parcel/runtime-js/lib/relative-path')(${JSON.stringify(
-      getPublicBundleId(from)
-    )}, ${JSON.stringify(getPublicBundleId(to))})`;
+      from.publicId
+    )}, ${JSON.stringify(to.publicId)})`;
   }
 
   return JSON.stringify(
@@ -208,8 +210,4 @@ function getRelativePathExpr(from, to) {
 function shouldUseRuntimeManifest(bundle) {
   let env = bundle.env;
   return !env.isLibrary && env.outputFormat === "global" && env.isBrowser();
-}
-
-function getPublicBundleId(bundle) {
-  return bundle.id.slice(-16);
 }

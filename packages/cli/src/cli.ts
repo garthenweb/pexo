@@ -142,7 +142,7 @@ const spawnServerBuildDev = (entry: string, mode = "development") => {
 };
 
 const spawnServerRun = () => {
-  const childProcess = spawn("node", [path.join(distDir, "server.js")], {
+  const childProcess = spawn("node", [path.join(distDir, "server", "server.js")], {
     shell: true,
     stdio: ["pipe", "inherit", "inherit"],
     env: process.env,

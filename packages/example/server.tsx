@@ -2,7 +2,10 @@ import "isomorphic-fetch";
 import React from "react";
 import express from "express";
 import path from "path";
-import { createPluginStyledComponents, createStreamMiddleware } from "@pexo/core";
+import {
+  createPluginStyledComponents,
+  createStreamMiddleware,
+} from "@pexo/core";
 import App from "./app";
 import createApi from "./server.api";
 
@@ -27,7 +30,19 @@ expressApp.use(
 if (process.env.NODE_ENV !== "production") {
   expressApp.use(
     "/__parcel_source_root",
-    express.static(path.join(process.cwd(), '../..'), {
+    express.static(path.join(process.cwd(), "../.."), {
+      maxAge: 2500,
+    })
+  );
+  expressApp.use(
+    "/node_modules",
+    express.static(path.join(process.cwd(), "../../node_modules"), {
+      maxAge: 2500,
+    })
+  );
+  expressApp.use(
+    "/packages",
+    express.static(path.join(process.cwd(), "../../packages"), {
       maxAge: 2500,
     })
   );
