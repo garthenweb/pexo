@@ -48,8 +48,8 @@
     "@pexo/request": "0.0.0-alpha.4.1",
     "express": "^4.17.1",
     "isomorphic-fetch": "^2.2.1",
-    "react": "^0.0.0-fec00a869",
-    "react-dom": "^0.0.0-fec00a869",
+    "react": "0.0.0-experimental-94c0244ba",
+    "react-dom": "0.0.0-experimental-94c0244ba",
     "styled-components": "^5.1.0"
   },
   "alias": {
