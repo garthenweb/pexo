@@ -17,7 +17,8 @@ exports.default = new Reporter({
       return;
     }
     const { distDir } = options;
-    const serverDistDir = path.dirname(distDir);
+    // TODO check why distDir is not exposed in options any longer and if it is safe to use 'dist' as fallback by default
+    const serverDistDir = distDir ? path.dirname(distDir) : "dist";
     const manifest = {};
     for (let bundle of event.bundleGraph.getBundles()) {
       const mainEntryBundle = bundle.getMainEntry();
