@@ -41,6 +41,7 @@
     "istanbul-api": "^3.0.0",
     "istanbul-lib-coverage": "^3.0.0",
     "jest": "^26.6.3",
+    "lerna": "^3.22.1",
     "supertest": "^6.0.1"
   },
   "dependencies": {
