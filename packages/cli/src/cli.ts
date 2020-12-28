@@ -27,20 +27,32 @@ program
     console.log("");
     console.log("[PeXo] BUILD APPLICATION");
     console.log("");
-    const parcelServerProcess = spawnServerBuildDev(fullServerEntry);
-    const parcelClientProcess = spawnClientWatch(fullClientEntry);
-    parcelClientProcess.on("exit", () => {
+    const parcelClientProcess = spawnClientBuilder(fullClientEntry);
+    const parcelServerProcess = spawnServerBuilder(fullServerEntry);
+    const serverProcess = spawnServer();
+    let isShuttingDown = false;
+    const shutAllDown = () => {
+      if (isShuttingDown) {
+        return;
+      }
+      isShuttingDown = true;
+      parcelClientProcess.stdin.pause();
+      parcelServerProcess.stdin.pause();
+      serverProcess.stdin.pause();
+      parcelClientProcess.kill();
+      parcelServerProcess.kill();
+      serverProcess.kill();
+
+      console.log("");
+      console.log("[PeXo] ALL PROCESSES SHUT DOWN, EXIT!");
+      console.log("");
+
       process.exit(1);
-    });
-    parcelServerProcess.on("exit", () => {
-      console.log("");
-      console.log("[PeXo] START SERVER");
-      console.log("");
-      const serverProcess = spawnServerRun();
-      serverProcess.on("exit", () => {
-        process.exit(1);
-      });
-    });
+    };
+    parcelClientProcess.on("exit", shutAllDown);
+    parcelServerProcess.on("exit", shutAllDown);
+    serverProcess.on("exit", shutAllDown);
+    process.on("SIGINT", shutAllDown);
   });
 
 program
@@ -60,11 +72,14 @@ program
     console.log("");
     console.log("[PeXo] BUILD APPLICATION");
     console.log("");
-    const parcelServerProcess = spawnServerBuildDev(
+    const parcelServerProcess = spawnServerBuilder(
       fullServerEntry,
       "production"
     );
-    const parcelClientProcess = spawnClientWatch(fullClientEntry, "production");
+    const parcelClientProcess = spawnClientBuilder(
+      fullClientEntry,
+      "production"
+    );
     const clientDone = new Promise((resolve, reject) =>
       parcelClientProcess.on("exit", (err) => (err ? reject(err) : resolve()))
     );
@@ -77,7 +92,7 @@ program
     console.log("");
   });
 
-const spawnClientWatch = (entry: string, mode = "development") => {
+const spawnClientBuilder = (entry: string, mode = "development") => {
   const childProcess = spawn(
     parcelExecPath,
     [
@@ -109,18 +124,18 @@ const spawnClientWatch = (entry: string, mode = "development") => {
   return childProcess;
 };
 
-const spawnServerBuildDev = (entry: string, mode = "development") => {
+const spawnServerBuilder = (entry: string, mode = "development") => {
   const childProcess = spawn(
     parcelExecPath,
     [
-      "build",
+      mode === "development" ? "watch" : "build",
       "--dist-dir",
       distDir,
       "--target",
       "server",
       "--cache-dir",
       ".parcel-cache/server",
-      mode === "development" ? "--no-minify" : "",
+      mode === "development" ? "--no-hmr" : "",
       entry,
     ],
     {
@@ -139,12 +154,17 @@ const spawnServerBuildDev = (entry: string, mode = "development") => {
   return childProcess;
 };
 
-const spawnServerRun = () => {
-  const childProcess = spawn("node", [path.join(distDir, "server", "server.js")], {
-    shell: true,
-    stdio: ["pipe", "inherit", "inherit"],
-    env: process.env,
-  });
+const spawnServer = () => {
+  const serverFile = path.join(distDir, "server", "server.js");
+  const childProcess = spawn(
+    "nodemon",
+    ["--inspect", `--watch '${distDir}/server/*.js'`, serverFile],
+    {
+      shell: true,
+      stdio: ["pipe", "inherit", "inherit"],
+      env: process.env,
+    }
+  );
   return childProcess;
 };
 

@@ -10,7 +10,13 @@ echo
 echo "Building default targets..."
 echo
 
-npx parcel build --no-cache --no-minify ./packages/cli ./packages/request ./packages/utils ./packages/core
+npx parcel build --no-minify ./packages/cli ./packages/request ./packages/utils ./packages/core
+
+echo
+echo "Assign access rights..."
+echo
+
+chmod +x packages/cli/bin/cli.js
 
 echo
 echo "Done!"
