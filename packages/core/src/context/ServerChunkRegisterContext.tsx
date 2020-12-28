@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { ChunkModule } from "../../packages/core/src/components/types";
+import { ChunkModule } from "../components/types";
 
 export const ServerChunkRegisterContext = React.createContext({
   registry: new Map(),

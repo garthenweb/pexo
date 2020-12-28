@@ -7,7 +7,7 @@
   "source": "src/core.ts",
   "main": "lib/core.js",
   "module": "lib/core.esm.js",
-  "typings": "lib/core.d.ts",
+  "types": "lib/core.d.ts",
   "sideEffects": false,
   "targets": {
     "main": {
