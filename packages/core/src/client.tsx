@@ -15,8 +15,7 @@ import {
 } from "./runtime/injectGlobalRuntime";
 import { cleanRuntime } from "./runtime/cleanRuntime";
 import { hydrateRequiredChunks } from "./runtime/dynamicImports";
-import { Plugin } from "./plugins";
-import { registerServiceWorker } from "./serviceWorker/registerServiceWorker";
+import { Plugin, registerServiceWorker } from "./plugins";
 import { injectGlobalErrorHandler } from "./utils/injectGlobalErrorHandler";
 
 interface MountConfig {

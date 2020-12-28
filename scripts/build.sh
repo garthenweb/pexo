@@ -10,7 +10,7 @@ echo
 echo "Building default targets..."
 echo
 
-npx parcel build --no-minify ./packages/cli ./packages/request ./packages/utils ./packages/core
+npx parcel build --no-minify ./packages/cli ./packages/request ./packages/utils ./packages/core ./packages/core/src/serviceWorker
 
 echo
 echo "Assign access rights..."

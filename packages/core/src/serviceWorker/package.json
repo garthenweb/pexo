@@ -1,0 +1,17 @@
+{
+  "author": "Jannick Garthen <jannick.garthen@gmail.com>",
+  "source": "./worker.js",
+  "main": "../../lib/sw.js",
+  "sideEffects": false,
+  "private": true,
+  "targets": {
+    "main": {
+      "isLibrary": true,
+      "context": "web-worker"
+    }
+  },
+  "engines": {
+    "parcel": "^2.0.0-nightly.196",
+    "node": ">=12.x"
+  }
+}

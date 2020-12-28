@@ -17,15 +17,23 @@ expressApp.use(
   express.static(path.join(process.cwd(), "dist", "public"), {
     maxAge:
       process.env.NODE_ENV === "production" ? 1000 * 60 * 60 * 24 * 360 : 2500,
-    setHeaders: function (res, filePath) {
-      if (
-        filePath.startsWith(path.join(process.cwd(), "dist", "public", "__"))
-      ) {
-        res.setHeader("service-worker-allowed", "/");
-      }
-    },
   })
 );
+
+expressApp.use("/sw.js", (req, res) => {
+  // work around limitations of parcel not working with `require.resolve`
+  res.sendFile(
+    path.join(
+      process.cwd(),
+      "..",
+      "..",
+      "node_modules",
+      "@pexo/core",
+      "lib",
+      "sw.js"
+    )
+  );
+});
 
 if (process.env.NODE_ENV !== "production") {
   expressApp.use(
